@@ -30,6 +30,7 @@ sys.path.insert(0, str(HERE))
 from parsers import rocprof_csv as R           # noqa: E402
 from normalize import normalizer               # noqa: E402
 from publish import to_dashboard               # noqa: E402
+from core.interface import CollectorResult, Cadence  # noqa: E402
 import workloads as WL                         # noqa: E402
 
 # bytes per TCC EA request (cache-line granularity on gfx942)
@@ -80,14 +81,14 @@ def ensure_binary(workload):
     return binp
 
 
-def run_rocprofv3(app, outdir, pmc=None, trace=False, timeout=180):
+def run_rocprofv3(app_cmd, outdir, pmc=None, trace=False, timeout=300):
     outdir.mkdir(parents=True, exist_ok=True)
     cmd = ["rocprofv3"]
     if trace:
         cmd += ["--kernel-trace"]
     if pmc:
         cmd += ["--pmc"] + pmc
-    cmd += ["--output-format", "csv", "-d", str(outdir), "--", str(app)]
+    cmd += ["--output-format", "csv", "-d", str(outdir), "--"] + [str(x) for x in app_cmd]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         return r.returncode, (r.stdout + r.stderr)
@@ -100,10 +101,11 @@ def _merge_counters(dst, src):
         dst.setdefault(k, {}).update(cm)
 
 
-def capture(app, raw_dir, extra_groups=None):
-    """Run trace + per-group pmc passes; merge whatever succeeds."""
+def capture(app_cmd, raw_dir, extra_groups=None):
+    """Run trace + per-group pmc passes; merge whatever succeeds. app_cmd is a
+    list: [binary, args...]."""
     tdir = raw_dir / "trace"
-    rc, _ = run_rocprofv3(app, tdir, trace=True)
+    rc, _ = run_rocprofv3(app_cmd, tdir, trace=True)
     print(f"  kernel-trace rc={rc}")
     t = R.find_outputs(str(tdir))
     traces = R.parse_kernel_trace(t["kernel_trace"])
@@ -114,7 +116,7 @@ def capture(app, raw_dir, extra_groups=None):
     for i, grp in enumerate(groups):
         print(f"  → pmc group {i + 1}/{len(PMC_GROUPS)}: {grp} ...")
         pdir = raw_dir / f"pmc{i}"
-        rc, log = run_rocprofv3(app, pdir, pmc=grp)
+        rc, log = run_rocprofv3(app_cmd, pdir, pmc=grp)
         if rc != 0:
             print(f"  pmc group {grp} rejected (rc={rc}) — skipping")
             if rc == 124:
@@ -128,7 +130,7 @@ def capture(app, raw_dir, extra_groups=None):
     return traces, counters, agent
 
 
-def derive(traces, counters, agent, workload_id, kernel_hint):
+def derive(traces, counters, agent, workload_id, kernel_hint, prec=None, flops_per_dispatch=None):
     name = R.pick_kernel(traces, counters, kernel_hint)
     if not name:
         sys.exit("no kernel found in rocprofv3 output")
@@ -144,7 +146,7 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     prof = WORKLOAD_PROFILES.get(workload_id, {})
     cu = agent.get("cu_count") or 304
     clk = agent.get("max_clk_mhz") or 2100
-    peakT = WL.PEAK_TFLOPS.get(prof.get("prec", "fp16"), 1307.4)
+    peakT = WL.PEAK_TFLOPS.get(prec or prof.get("prec", "fp16"), 1307.4)
     peak_bw = 5.3
 
     grbm_total = c.get("GRBM_COUNT")
@@ -168,13 +170,16 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     achieved_bw = (total_bytes / kernel_time_s / 1e12) if (total_bytes and kernel_time_s) else None
 
     flops = None
-    fl = prof.get("flops")
-    if fl:
-        mode, val = fl
-        if mode == "per_thread" and grid_total:
-            flops = val * grid_total
-        elif mode == "per_dispatch":
-            flops = val * len(kdisp)
+    if flops_per_dispatch is not None:
+        flops = flops_per_dispatch * len(kdisp)        # sweep override (2*M*N*K)
+    else:
+        fl = prof.get("flops")
+        if fl:
+            mode, val = fl
+            if mode == "per_thread" and grid_total:
+                flops = val * grid_total
+            elif mode == "per_dispatch":
+                flops = val * len(kdisp)
     achieved_tf = (flops / kernel_time_s / 1e12) if (flops and kernel_time_s) else None
 
     hit = c.get("TCC_HIT_sum")
@@ -266,6 +271,86 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
                         "xcds": agent.get("num_xcc", 8), "partition": "SPX / NPS1"}
 
 
+DEVICE_STATUS = {"mode": "live", "source": "rocprofv3 (SR-IOV VF)",
+                 "driver": "ROCm 7.0 · amdgpu 6.16", "gpus": 1,
+                 "sampling": "per-kernel", "status": "captured"}
+
+
+def make_record(traces, counters, agent, workload_id, kernel_hint, run_id, ts_iso,
+                *, prec=None, flops_per_dispatch=None, batch=1, name=None):
+    prof = WORKLOAD_PROFILES.get(workload_id, {})
+    kname, scalars, fidelity, run_config = derive(
+        traces, counters, agent, workload_id, kernel_hint,
+        prec=prec, flops_per_dispatch=flops_per_dispatch)
+    p = prec or prof.get("prec", "fp16")
+    wl = {"id": workload_id, "name": name or f"{workload_id} ({kname[:32]})",
+          "unit": prof.get("unit", "kernels"), "short": prof.get("short", "kernels"),
+          "pref": p, "batch": batch, "num_gpus": 1, "precision": p,
+          "peakTflops": run_config["peakTflops"]}
+    res = CollectorResult(layer_id=-1, cadence=Cadence.PERKERNEL)
+    res.scalars.update(scalars)
+    res.fidelity.update(fidelity)
+    rec = normalizer.normalize([res], source="device", run_id=run_id, timestamp=ts_iso,
+                               run_config=run_config, workload=wl,
+                               peak_tflops=run_config["peakTflops"])
+    return kname, rec
+
+
+def _merge_prior(records, dash):
+    import json
+    seen = {r["meta"]["run_id"] for r in records}
+    for f in sorted((dash / "records").glob("*.json")):
+        try:
+            prev = json.loads(f.read_text())
+            if prev["meta"]["run_id"] not in seen:
+                records.append(prev)
+                seen.add(prev["meta"]["run_id"])
+        except Exception:
+            pass
+    return records
+
+
+def run_sweep(args, ts, ts_iso, dash):
+    sizes = [int(x) for x in args.sizes.split(",") if x.strip()]
+    precs = [p.strip() for p in args.precisions.split(",") if p.strip()]
+    app = ensure_binary("gemm")
+    base = ts.strftime("%Y%m%dT%H%M%SZ") + "_sweep"
+    records = []
+    for prec in precs:
+        for size in sizes:
+            print(f"\n=== sweep: gemm {prec} {size}^3 ===")
+            sraw = HERE / "runs" / base / f"gemm_{prec}_{size}" / "raw"
+            app_cmd = [str(app), str(size), str(size), str(size), prec, str(args.iters)]
+            traces, counters, agent = capture(app_cmd, sraw)
+            if not traces and not counters:
+                print("  skip (no kernels — precision/size unsupported on this box?)")
+                continue
+            try:
+                kname, rec = make_record(traces, counters, agent, "gemm", None,
+                                         f"{base}_{prec}_{size}", ts_iso, prec=prec,
+                                         flops_per_dispatch=2 * size ** 3, batch=size,
+                                         name=f"GEMM {prec} {size}^3")
+            except SystemExit as e:
+                print("  skip:", e)
+                continue
+            records.append(rec)
+            m = rec["metrics"]
+            mfma = next((x["v"] for x in rec["layers"][0]["metrics"] if x["k"].startswith("MFMA")), None)
+            print(f"  -> {kname[:26]}  {m['achievedTflops']} TFLOPS  mfma={mfma}%  bound={m['boundBy']}")
+    if not records:
+        sys.exit("sweep produced no records (check rocBLAS / precision support)")
+    if args.keep:
+        _merge_prior(records, dash)
+    to_dashboard.publish(dash, records=records, device_status=DEVICE_STATUS)
+    print(f"\n[sweep] published {len(records)} record(s) -> {dash}/bundle.js")
+    print("\n[sweep] summary (real MI300X):")
+    for r in records:
+        m = r["metrics"]
+        hit = next((x["v"] for x in r["layers"][4]["metrics"] if x["k"] == "Kernel cache hit"), None)
+        print(f"  {r['meta']['workload']['name']:18}  {str(m['achievedTflops']):>8} TFLOPS"
+              f"  bw={m['achievedBwTBs']} TB/s  L2hit={hit}%  {m['boundBy']}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workload", default="vectoradd", choices=list(WORKLOAD_PROFILES),
@@ -275,6 +360,11 @@ def main():
     ap.add_argument("--dashboard", default="../mi300x-dashboard/data")
     ap.add_argument("--keep", action="store_true",
                     help="merge into existing dashboard bundle instead of replacing it")
+    ap.add_argument("--sweep", action="store_true",
+                    help="capture a grid of GEMM sizes × precisions into a dataset")
+    ap.add_argument("--sizes", default="2048,4096,8192", help="sweep GEMM sizes (M=N=K)")
+    ap.add_argument("--precisions", default="fp16,bf16,fp8", help="sweep precisions")
+    ap.add_argument("--iters", type=int, default=20, help="GEMM iterations per point")
     args = ap.parse_args()
     prof = WORKLOAD_PROFILES[args.workload]
     kernel_hint = args.kernel or prof.get("kernel")
@@ -286,9 +376,15 @@ def main():
         pass
 
     ts = datetime.now(timezone.utc)
+    ts_iso = ts.isoformat().replace("+00:00", "Z")
     run_id = ts.strftime("%Y%m%dT%H%M%SZ") + "_device_" + args.workload
     raw_dir = HERE / "runs" / run_id / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
+    dash = (HERE / args.dashboard).resolve()
+
+    if args.sweep:
+        run_sweep(args, ts, ts_iso, dash)
+        return
 
     if args.fixtures:
         print("[capture] FIXTURE mode — parsing bundled rocprofv3 CSVs")
@@ -300,26 +396,13 @@ def main():
     else:
         print("[capture] compiling + running workload under rocprofv3")
         app = ensure_binary(args.workload)
-        traces, counters, agent = capture(app, raw_dir)
+        traces, counters, agent = capture([str(app)], raw_dir)
 
     if not traces and not counters:
         sys.exit("no rocprofv3 output parsed — check the run on the box")
 
-    name, scalars, fidelity, run_config = derive(traces, counters, agent, args.workload, kernel_hint)
-    wl = {"id": args.workload, "name": f"{args.workload} ({name[:32]})",
-          "unit": prof.get("unit", "kernels"), "short": prof.get("short", "kernels"),
-          "pref": prof.get("prec", "fp16"), "batch": 1, "num_gpus": 1,
-          "precision": prof.get("prec", "fp16"), "peakTflops": run_config["peakTflops"]}
-
-    from core.interface import CollectorResult, Cadence
-    res = CollectorResult(layer_id=-1, cadence=Cadence.PERKERNEL)
-    res.scalars.update(scalars)
-    res.fidelity.update(fidelity)
-
-    record = normalizer.normalize([res], source="device", run_id=run_id,
-                                  timestamp=ts.isoformat().replace("+00:00", "Z"),
-                                  run_config=run_config, workload=wl,
-                                  peak_tflops=run_config["peakTflops"])
+    name, record = make_record(traces, counters, agent, args.workload, kernel_hint,
+                               run_id, ts_iso)
 
     print(f"\n[capture] kernel: {name}")
     m = record["metrics"]
@@ -329,23 +412,11 @@ def main():
     print("  L0:", {x['k']: x['v'] for x in record["layers"][0]["metrics"]})
     print("  L4:", {x['k']: x['v'] for x in record["layers"][4]["metrics"]})
 
-    dash = (HERE / args.dashboard).resolve()
     records = [record]
     if args.keep:
-        # merge previously-captured records so multiple workloads coexist
-        import json
-        for f in sorted((dash / "records").glob("*.json")):
-            try:
-                prev = json.loads(f.read_text())
-                if prev["meta"]["run_id"] != run_id:
-                    records.append(prev)
-            except Exception:
-                pass
+        _merge_prior(records, dash)
         print(f"[capture] --keep: merging {len(records)} records into the bundle")
-    to_dashboard.publish(dash, records=records,
-                         device_status={"mode": "live", "source": "rocprofv3 (SR-IOV VF)",
-                                        "driver": "ROCm 7.0 · amdgpu 6.16", "gpus": 1,
-                                        "sampling": "per-kernel", "status": "captured"})
+    to_dashboard.publish(dash, records=records, device_status=DEVICE_STATUS)
     print(f"\n[capture] published {len(records)} record(s) → {dash}/bundle.js")
     print("[capture] open the dashboard developer view to see L0–L7 from your MI300X.")
 
