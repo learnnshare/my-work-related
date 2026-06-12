@@ -4,7 +4,9 @@ pyyaml>=6.0
 
 # Predictor baseline (optional; falls back to a stdlib model if missing):
 scikit-learn>=1.2
-numpy>=1.23
+# Pin numpy < 2.3 to coexist with image packages (numba, opencv) that cap it.
+# Our shared-env numpy shadows the system one via PYTHONPATH, so keep it compatible.
+numpy>=1.23,<2.3
 
 # On the real MI300X box you also need PyTorch built for ROCm. Do NOT pip-install
 # the default CUDA wheel — use the ROCm index, e.g.:
