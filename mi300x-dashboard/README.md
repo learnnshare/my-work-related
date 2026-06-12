@@ -24,11 +24,22 @@ page choose the **Executive** or **Developer** dashboard.
 | File | Purpose |
 |---|---|
 | `index.html` | Landing page — pick a dashboard |
-| `executive.html` | Outcome KPIs: throughput, cost/1M, $/hr, SLA, TCO projection |
-| `developer.html` | L0–L6 AMD/ROCm stack telemetry + roofline, latency, timeline |
-| `assets/sim.js` | Shared simulation engine — turns knobs into plausible metrics |
-| `assets/charts.js` | Dependency-free SVG charts (gauge, line, bar, donut, roofline, histogram, timeline) |
+| `executive.html` | **Domain-neutral.** Outcome KPIs: throughput, cost/1M, $/hr, SLA, TCO projection |
+| `developer.html` | **Domain-neutral.** L0–L6 AMD/ROCm stack telemetry + roofline, latency, timeline |
+| `physical-ai.html` | **Use-case.** Real-time control deadlines + sim-to-real prediction (±20%) |
+| `CONCEPT.md` | Design brief / brainstorm behind the three dashboards |
+| `assets/sim.js` | Shared simulation engine — knobs → metrics + sim-to-real prediction |
+| `assets/charts.js` | Dependency-free SVG charts (gauge, line, bar, donut, roofline, histogram, timeline, parity, budget) |
 | `assets/style.css` | Shared AMD-inspired dark theme |
+
+### Three lenses on the same MI300X telemetry
+
+- **Executive** and **Developer** are *domain-neutral* — useful for any workload.
+- **Physical AI** is the *use-case* lens for the Real-to-Sim initiative: it frames
+  performance around robot control deadlines and validates predicted (simulation)
+  vs measured (real MI300X) metrics against the ±20% success criterion.
+
+See [`CONCEPT.md`](CONCEPT.md) for the full design rationale.
 
 ## Interactive knobs
 

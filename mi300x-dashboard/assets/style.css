@@ -159,7 +159,8 @@ input[type=range] { width: 100%; accent-color: var(--red); }
 .layer.collapsed .layer-body { display: none; }
 .mcell { background: var(--bg2); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; }
 .mcell .mk { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
-.mcell .mv { font-size: 18px; font-weight: 700; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.mcell .mv { font-size: 18px; font-weight: 700; color: var(--text-hi); font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere; line-height: 1.2; }
 .mcell .mv .mu { font-size: 11px; color: var(--text-dim); font-weight: 500; margin-left: 3px; }
 .mbar { height: 5px; background: var(--track,#1b2230); border-radius: 3px; margin-top: 7px; overflow: hidden; }
 .mbar > i { display: block; height: 100%; border-radius: 3px; }

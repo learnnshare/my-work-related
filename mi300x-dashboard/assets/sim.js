@@ -277,6 +277,56 @@ function costModel(metrics, dollarsPerGpuHr) {
   return { rate, hourlyCost, itemsPerHour, costPerMillion, perfPerDollar, perfPerWatt, monthly };
 }
 
+/* ---- Sim-to-Real prediction (the project's core thesis) --------------
+   The objective: estimate REAL MI300X performance from SIMULATION-derived
+   metrics (Path 1 agnostic sim + Path 2 gem5 arch sim) within ±20%, without
+   touching the hardware until validation. Here we model that prediction:
+   - "measured" = computeMetrics() (stands in for real-hardware ground truth)
+   - "predicted" = the sim-based estimate, offset by a realistic error that
+     depends on regime (sim predicts compute-bound kernels well; CPU-bound
+     and launch-bound workloads are harder, so error is larger).
+   Replace this with (gem5 features -> trained model -> estimate) for real. */
+const PREDICT_BIAS = {            // baseline relative error by workload regime
+  'compute-bound': 0.05,
+  'memory-bound': 0.10,
+  'balanced': 0.09,
+  'launch-bound': 0.15,
+  'cpu-bound': 0.19,
+};
+const TARGET_ACCURACY = 0.20;     // ±20% success criterion from the objective
+
+function predictionSet(cfg) {
+  const real = computeMetrics(cfg);
+  const b = PREDICT_BIAS[real.wl.regime] ?? 0.10;
+  const t = cfg.tick || 0;
+  // Each metric: a signed sim error (systematic component + bounded jitter).
+  const err = (seed, dir) => dir * (b * 0.65) + jitter(seed, b * 0.55);
+  const pairs = [
+    { k: 'E2E latency', unit: 'ms', lowerBetter: true,
+      measured: real.e2eMs, predicted: real.e2eMs * (1 + err(t + 11, +1)) },
+    { k: 'Throughput', unit: real.wl.short + '/s',
+      measured: real.throughput, predicted: real.throughput * (1 - err(t + 12, +1)) },
+    { k: 'Achieved TFLOPS', unit: 'TFLOPS',
+      measured: real.achievedTflops, predicted: real.achievedTflops * (1 - err(t + 13, +1) * 0.6) },
+    { k: 'HBM bandwidth', unit: 'TB/s',
+      measured: real.achievedBwTBs, predicted: real.achievedBwTBs * (1 - err(t + 14, +1) * 0.7) },
+    { k: 'Board power', unit: 'W',
+      measured: real.powerW, predicted: real.powerW * (1 + err(t + 15, +1) * 0.5) },
+  ];
+  pairs.forEach(p => {
+    p.errPct = Math.abs(p.predicted - p.measured) / (Math.abs(p.measured) || 1) * 100;
+    p.ratio = p.predicted / (p.measured || 1);
+    p.within = p.errPct <= TARGET_ACCURACY * 100;
+  });
+  const within = pairs.filter(p => p.within).length;
+  return {
+    real, pairs,
+    withinPct: within / pairs.length * 100,
+    meanErrPct: pairs.reduce((s, p) => s + p.errPct, 0) / pairs.length,
+    targetPct: TARGET_ACCURACY * 100,
+  };
+}
+
 /* Build a short synthetic time-series for trend charts. */
 function timeSeries(cfg, points) {
   const out = [];

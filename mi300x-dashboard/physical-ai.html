@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physical AI Dashboard — MI300X Console</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">▲</div>
+    <div>
+      <h1>MI300X Performance Console</h1>
+      <div class="sub">Physical AI use-case · sim-to-real gap · simulated</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">Home</a>
+  <a class="navlink" href="executive.html">Executive</a>
+  <a class="navlink" href="developer.html">Developer</a>
+  <a class="navlink active" href="physical-ai.html">Physical AI</a>
+  <span class="badge live" id="liveBadge">LIVE</span>
+</div>
+
+<div class="wrap">
+  <div class="layout">
+    <!-- CONTROLS -->
+    <aside class="controls">
+      <h2>Robot scenario</h2>
+      <div class="ctrl">
+        <label>Task / embodiment</label>
+        <select id="task"></select>
+      </div>
+      <div class="ctrl">
+        <label>Phase</label>
+        <div class="seg">
+          <button id="phDeploy" class="on">Deploy</button>
+          <button id="phTrain">Train (RL)</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <label>Control-loop target <span class="val" id="hzVal">200 Hz</span></label>
+        <input type="range" id="hz" min="10" max="1000" step="10" value="200">
+        <div class="note" id="budgetNote" style="margin-top:6px"></div>
+      </div>
+      <div class="ctrl">
+        <label>Parallel robots / envs <span class="val" id="batchVal">1</span></label>
+        <input type="range" id="batch" min="0" max="14" value="0">
+      </div>
+      <div class="ctrl">
+        <label>Precision</label>
+        <div class="seg" id="precSeg"></div>
+      </div>
+      <div class="ctrl">
+        <label>Live telemetry</label>
+        <div class="seg">
+          <button id="liveOn" class="on">On</button>
+          <button id="liveOff">Off</button>
+        </div>
+      </div>
+      <button class="reset" id="reset">Reset scenario</button>
+      <div class="wl-note" id="wlNote"></div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main>
+      <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="card kpi accent-teal"><div class="label">Control rate achievable</div>
+          <div><span class="big" id="kHz">—</span> <span class="unit">Hz</span></div>
+          <div class="delta" id="kHzD">&nbsp;</div></div>
+        <div class="card kpi"><div class="label">Deadline adherence</div>
+          <div><span class="big" id="kAdh">—</span> <span class="unit">%</span></div>
+          <div class="delta flat" id="kAdhD">&nbsp;</div></div>
+        <div class="card kpi accent-amber"><div class="label">Policy inference p50</div>
+          <div><span class="big" id="kLat">—</span> <span class="unit">ms</span></div>
+          <div class="delta flat" id="kJit">&nbsp;</div></div>
+        <div class="card kpi accent-red"><div class="label">Sim→Real accuracy</div>
+          <div><span class="big" id="kAcc">—</span> <span class="unit">% within ±20%</span></div>
+          <div class="delta flat" id="kAccD">&nbsp;</div></div>
+      </div>
+
+      <div class="grid cols-3" style="margin-bottom:18px">
+        <div class="card" style="grid-column: span 2">
+          <h3>Real-time control budget <span class="tag">per cycle</span></h3>
+          <div class="chart" id="budgetBar"></div>
+          <h3 style="margin-top:14px">Control cycle breakdown <span class="tag">sense → infer → act</span></h3>
+          <div class="chart" id="cycle"></div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--teal)"></i>sense (perception)</span>
+            <span><i class="dot" style="background:var(--blue)"></i>infer (policy on MI300X)</span>
+            <span><i class="dot" style="background:var(--purple)"></i>act (actuation/comms)</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Sim→Real confidence</h3>
+          <div class="chart" id="accGauge"></div>
+          <div class="statline"><span class="l">Metrics within ±20%</span><span class="v" id="within">—</span></div>
+          <div class="statline"><span class="l">Mean abs error</span><span class="v" id="meanErr">—</span></div>
+          <div class="statline"><span class="l">Hardest to predict</span><span class="v" id="hardest">—</span></div>
+        </div>
+      </div>
+
+      <div class="grid cols-3" style="margin-bottom:18px">
+        <div class="card" style="grid-column: span 2">
+          <h3>Sim → Real validation <span class="tag">predicted (gem5 + agnostic sim) vs measured (MI300X)</span></h3>
+          <div class="chart" id="parity"></div>
+          <div class="note">Each point is a predicted metric vs its real-hardware measurement. Inside the green ±20% band = the project's success criterion is met. This is the deliverable: trust simulation to estimate deployment before you rent the GPU.</div>
+        </div>
+        <div class="card">
+          <h3>Fleet / scale</h3>
+          <div class="statline"><span class="l">Throughput</span><span class="v" id="thru">—</span></div>
+          <div class="statline"><span class="l">Parallel robots</span><span class="v" id="robots">—</span></div>
+          <div class="statline"><span class="l">VRAM in use</span><span class="v" id="vram">—</span></div>
+          <div class="statline"><span class="l">Bound by</span><span class="v" id="bound">—</span></div>
+          <div class="statline"><span class="l">Board power</span><span class="v" id="power">—</span></div>
+          <div class="chart" id="thruTrend" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <strong>Physical AI use-case view.</strong> This dashboard frames MI300X performance around the
+        <em>simulation-to-real gap</em>: it estimates whether a control policy will hold its real-time
+        deadline on real hardware, using simulation-derived metrics — and shows the prediction error
+        against (simulated) ground truth. All numbers are illustrative. For the domain-neutral stack and
+        business views, see the <a class="go" href="developer.html" style="text-decoration:none">Developer</a>
+        and <a class="go" href="executive.html" style="text-decoration:none">Executive</a> dashboards.
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/sim.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+const PHYS_TASKS = {
+  walk:     { name:'Bipedal walk (Walker2d)',            wl:'ppo_infer', hz:200, senseMs:0.8, actMs:0.5 },
+  quad:     { name:'Quadruped locomotion',               wl:'ppo_infer', hz:500, senseMs:0.5, actMs:0.4 },
+  humanoid: { name:'Humanoid whole-body control',        wl:'ppo_infer', hz:100, senseMs:1.5, actMs:0.9 },
+  manip:    { name:'Robot-arm manipulation (vision)',    wl:'resnet',    hz:60,  senseMs:3.0, actMs:1.0 },
+  vla:      { name:'Vision-Language-Action policy (7B)',  wl:'llm7b',     hz:10,  senseMs:5.0, actMs:1.5 },
+};
+const BATCH_STOPS = [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384];
+const cfg = { task:'walk', phase:'deploy', workload:'ppo_infer', batch:1, precision:null,
+              numGPUs:1, partition:'spx', powerFrac:1, targetHz:200, tick:0 };
+let live = true, prev = null;
+
+const taskSel = document.getElementById('task');
+Object.entries(PHYS_TASKS).forEach(([id,t])=>{ const o=document.createElement('option');
+  o.value=id; o.textContent=t.name; taskSel.appendChild(o); });
+taskSel.value = cfg.task;
+
+const precSeg = document.getElementById('precSeg');
+PRECISIONS.forEach(p=>{ const b=document.createElement('button'); b.textContent=p.toUpperCase();
+  b.dataset.p=p; b.onclick=()=>{ cfg.precision=p; syncPrec(); render(); }; precSeg.appendChild(b); });
+function syncPrec(){ const eff=cfg.precision||WORKLOADS[cfg.workload].pref;
+  [...precSeg.children].forEach(b=>b.classList.toggle('on',b.dataset.p===eff)); }
+
+function applyTask(){
+  const t = PHYS_TASKS[cfg.task];
+  cfg.workload = cfg.phase==='train' ? 'ppo_train' : t.wl;
+  cfg.targetHz = t.hz;
+  cfg.precision = null;
+  document.getElementById('hz').value = t.hz;
+  document.getElementById('hzVal').textContent = t.hz+' Hz';
+  document.getElementById('wlNote').textContent = WORKLOADS[cfg.workload].note;
+  syncPrec();
+}
+taskSel.onchange=()=>{ cfg.task=taskSel.value; applyTask(); render(); };
+document.getElementById('hz').oninput=e=>{ cfg.targetHz=+e.target.value;
+  document.getElementById('hzVal').textContent=cfg.targetHz+' Hz'; render(); };
+document.getElementById('batch').oninput=e=>{ cfg.batch=BATCH_STOPS[+e.target.value];
+  document.getElementById('batchVal').textContent=cfg.batch.toLocaleString(); render(); };
+document.getElementById('phDeploy').onclick=()=>{ cfg.phase='deploy'; syncPhase(); applyTask(); render(); };
+document.getElementById('phTrain').onclick=()=>{ cfg.phase='train'; syncPhase(); applyTask(); render(); };
+function syncPhase(){ document.getElementById('phDeploy').classList.toggle('on',cfg.phase==='deploy');
+  document.getElementById('phTrain').classList.toggle('on',cfg.phase==='train'); }
+document.getElementById('liveOn').onclick=()=>{ live=true; setLive(); };
+document.getElementById('liveOff').onclick=()=>{ live=false; setLive(); };
+document.getElementById('reset').onclick=()=>location.reload();
+function setLive(){ document.getElementById('liveOn').classList.toggle('on',live);
+  document.getElementById('liveOff').classList.toggle('on',!live);
+  document.getElementById('liveBadge').style.display=live?'':'none'; }
+
+function adherencePct(p50, p99, deadline){
+  if(p99 <= p50) return deadline>=p50 ? 99.9 : 1;
+  if(deadline >= p99) return 99.9;
+  if(deadline <= p50) return clamp(50*deadline/p50, 1, 50);
+  return clamp(50 + 49*(deadline - p50)/(p99 - p50), 1, 99.9);
+}
+
+function render(){
+  const t = PHYS_TASKS[cfg.task];
+  const pred = predictionSet(cfg);
+  const m = pred.real;
+  const deadline = 1000 / cfg.targetHz;
+  const inferMs = m.latencyP50;
+  const cycleUsed = t.senseMs + inferMs + t.actMs;
+  const cycleP99 = t.senseMs + m.latencyP99 + t.actMs;
+  const achievableHz = 1000 / cycleP99;
+  const adh = adherencePct(cycleUsed, cycleP99, deadline);
+
+  document.getElementById('budgetNote').textContent =
+    'deadline = '+deadline.toFixed(2)+' ms / cycle';
+
+  document.getElementById('kHz').textContent = Math.round(achievableHz).toLocaleString();
+  const hzOk = achievableHz >= cfg.targetHz;
+  document.getElementById('kHzD').innerHTML =
+    `<span class="${hzOk?'ok':'bad'}">${hzOk?'meets':'below'} ${cfg.targetHz} Hz target</span>`;
+  document.getElementById('kAdh').textContent = adh.toFixed(1);
+  document.getElementById('kAdhD').innerHTML =
+    `<span class="${adh>99?'ok':adh>90?'warn':'bad'}">${adh>99?'real-time safe':adh>90?'marginal':'misses deadlines'}</span>`;
+  document.getElementById('kLat').textContent = inferMs.toFixed(inferMs<1?3:2);
+  document.getElementById('kJit').textContent = 'jitter '+(m.latencyP99-m.latencyP50).toFixed(2)+' ms';
+  document.getElementById('kAcc').textContent = pred.withinPct.toFixed(0);
+  document.getElementById('kAccD').innerHTML =
+    `<span class="${pred.withinPct>=80?'ok':pred.withinPct>=60?'warn':'bad'}">mean err ${pred.meanErrPct.toFixed(1)}%</span>`;
+
+  budgetBar(document.getElementById('budgetBar'), cycleUsed, deadline, {w:520,h:64,p99:cycleP99});
+  timeline(document.getElementById('cycle'),
+    [{name:'sense',dur:t.senseMs},{name:'policy',dur:inferMs},{name:'act',dur:t.actMs}],
+    {w:520,h:96,xlabel:'one control cycle (relative durations)'});
+
+  gauge(document.getElementById('accGauge'), pred.withinPct, 100,
+    {label:pred.withinPct.toFixed(0)+'%', unit:'within ±20%',
+     color: pred.withinPct>=80?C.green:pred.withinPct>=60?C.amber:C.red});
+  document.getElementById('within').textContent = Math.round(pred.withinPct/20)+' / '+pred.pairs.length;
+  document.getElementById('meanErr').textContent = pred.meanErrPct.toFixed(1)+'%';
+  const worst = pred.pairs.reduce((a,b)=>b.errPct>a.errPct?b:a);
+  document.getElementById('hardest').textContent = worst.k+' ('+worst.errPct.toFixed(1)+'%)';
+
+  parityPlot(document.getElementById('parity'), pred.pairs, {w:520,h:230,target:pred.targetPct});
+
+  document.getElementById('thru').textContent = fmtNum(m.throughput)+' '+m.throughputUnit+'/s';
+  document.getElementById('robots').textContent = cfg.batch.toLocaleString();
+  document.getElementById('vram').textContent = m.memUsedGB.toFixed(1)+' / '+m.memTotalGB+' GB';
+  document.getElementById('bound').textContent = m.boundBy + (m.wl.cpuBound>0.4?' + CPU':'');
+  document.getElementById('power').textContent = Math.round(m.powerW)+' W';
+  const ts = timeSeries(cfg, 20).map(x=>x.throughput);
+  lineChart(document.getElementById('thruTrend'), [{data:ts,color:C.teal}],
+    {w:300,h:120,area:true,xlabel:m.throughputUnit+'/s'});
+
+  prev = { hz:achievableHz };
+}
+
+syncPrec(); syncPhase(); applyTask();
+render();
+setInterval(()=>{ if(live){ cfg.tick++; render(); } }, 1500);
+</script>
+</body>
+</html>

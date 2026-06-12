@@ -252,4 +252,62 @@ function timeline(container, kernels, opts = {}) {
   t.textContent = opts.xlabel || 'one iteration — kernel dispatch timeline (relative)';
 }
 
+/* ---- Parity plot: predicted/measured ratio vs ±20% band -------------- */
+function parityPlot(container, pairs, opts = {}) {
+  const w = opts.w || 520, h = opts.h || 220, pad = { l: 44, r: 14, t: 16, b: 40 };
+  const svg = svgRoot(container, w, h);
+  const yMin = 0.6, yMax = 1.4;
+  const band = (opts.target || 20) / 100;          // ±band fraction
+  const Y = r => h - pad.b - (h - pad.t - pad.b) * ((clamp(r, yMin, yMax) - yMin) / (yMax - yMin));
+  const n = pairs.length;
+  const X = i => pad.l + (w - pad.l - pad.r) * ((i + 0.5) / n);
+  // ±band shading
+  el('rect', { x: pad.l, y: Y(1 + band), width: w - pad.l - pad.r, height: Y(1 - band) - Y(1 + band),
+    fill: C.green, opacity: 0.10 }, svg);
+  el('line', { x1: pad.l, y1: Y(1 + band), x2: w - pad.r, y2: Y(1 + band), stroke: C.green,
+    'stroke-width': 1, 'stroke-dasharray': '4 3', opacity: 0.6 }, svg);
+  el('line', { x1: pad.l, y1: Y(1 - band), x2: w - pad.r, y2: Y(1 - band), stroke: C.green,
+    'stroke-width': 1, 'stroke-dasharray': '4 3', opacity: 0.6 }, svg);
+  // perfect-prediction line at ratio = 1
+  el('line', { x1: pad.l, y1: Y(1), x2: w - pad.r, y2: Y(1), stroke: C.axis, 'stroke-width': 1.5 }, svg);
+  // y labels
+  [0.6, 0.8, 1.0, 1.2, 1.4].forEach(r => {
+    const t = el('text', { x: pad.l - 6, y: Y(r) + 3, fill: C.text, 'font-size': 9, 'text-anchor': 'end' }, svg);
+    t.textContent = (r * 100 - 100 > 0 ? '+' : '') + Math.round(r * 100 - 100) + '%';
+  });
+  pairs.forEach((p, i) => {
+    const col = p.within ? C.green : C.red;
+    el('line', { x1: X(i), y1: Y(1), x2: X(i), y2: Y(p.ratio), stroke: col, 'stroke-width': 2, opacity: 0.5 }, svg);
+    el('circle', { cx: X(i), cy: Y(p.ratio), r: 5.5, fill: col, stroke: '#0a0d14', 'stroke-width': 1.5 }, svg);
+    const lab = el('text', { x: X(i), y: h - pad.b + 14, fill: C.text, 'font-size': 8.5, 'text-anchor': 'middle' }, svg);
+    lab.textContent = (p.k.length > 12 ? p.k.slice(0, 11) + '…' : p.k);
+    const e = el('text', { x: X(i), y: h - pad.b + 26, fill: col, 'font-size': 9, 'font-weight': 600, 'text-anchor': 'middle' }, svg);
+    e.textContent = p.errPct.toFixed(1) + '%';
+  });
+  const t = el('text', { x: pad.l, y: 12, fill: C.text, 'font-size': 9 }, svg);
+  t.textContent = 'predicted vs measured (0% = perfect; green band = ±' + (opts.target || 20) + '%)';
+}
+
+/* ---- Budget bar: used vs deadline budget ----------------------------- */
+function budgetBar(container, used, budget, opts = {}) {
+  const w = opts.w || 520, h = opts.h || 64, pad = { l: 10, r: 10, t: 14, b: 22 };
+  const svg = svgRoot(container, w, h);
+  const scaleMax = Math.max(budget * 1.25, used * 1.1);
+  const X = v => pad.l + (w - pad.l - pad.r) * (v / scaleMax);
+  el('rect', { x: pad.l, y: pad.t, width: w - pad.l - pad.r, height: 18, rx: 5, fill: C.track }, svg);
+  const over = used > budget;
+  el('rect', { x: pad.l, y: pad.t, width: Math.max(3, X(Math.min(used, scaleMax)) - pad.l), height: 18, rx: 5,
+    fill: over ? C.red : used > budget * 0.85 ? C.amber : C.teal }, svg);
+  // budget marker
+  el('line', { x1: X(budget), y1: pad.t - 4, x2: X(budget), y2: pad.t + 24, stroke: C.amber, 'stroke-width': 2 }, svg);
+  const bl = el('text', { x: X(budget), y: pad.t - 6, fill: C.amber, 'font-size': 9, 'text-anchor': 'middle' }, svg);
+  bl.textContent = 'budget ' + budget.toFixed(1) + 'ms';
+  if (opts.p99 != null) {
+    el('line', { x1: X(Math.min(opts.p99, scaleMax)), y1: pad.t, x2: X(Math.min(opts.p99, scaleMax)), y2: pad.t + 18,
+      stroke: '#fff', 'stroke-width': 1.5, 'stroke-dasharray': '2 2' }, svg);
+  }
+  const ul = el('text', { x: pad.l, y: h - 6, fill: over ? C.red : C.text, 'font-size': 10 }, svg);
+  ul.textContent = 'used ' + used.toFixed(2) + ' ms' + (opts.p99 != null ? '  (p99 ' + opts.p99.toFixed(2) + ' ms)' : '') + (over ? '  — DEADLINE MISS' : '  — within budget');
+}
+
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
