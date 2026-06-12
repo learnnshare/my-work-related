@@ -34,9 +34,12 @@ def amd_smi_json(subcommand, gpu=0, timeout=10):
         return None
     if isinstance(d, list):
         return d[0] if d else {}
-    if isinstance(d, dict) and "gpu" in d and isinstance(d["gpu"], list):
-        return d["gpu"][0] if d["gpu"] else {}
-    return d
+    if isinstance(d, dict):
+        # ROCm 7 amd-smi wraps per-GPU dicts as {"gpu_data": [ {...} ]}.
+        for wrapper in ("gpu_data", "gpu"):
+            if isinstance(d.get(wrapper), list) and d[wrapper]:
+                return d[wrapper][0]
+    return d  # e.g. `partition` returns {current_partition:[...], ...} — used as-is
 
 
 def deep_find(obj, *keys):
