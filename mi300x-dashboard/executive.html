@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Dashboard — MI300X Console</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">▲</div>
+    <div>
+      <h1>MI300X Performance Console</h1>
+      <div class="sub">Executive view · simulated data</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">Home</a>
+  <a class="navlink active" href="executive.html">Executive</a>
+  <a class="navlink" href="developer.html">Developer</a>
+  <span class="badge live" id="liveBadge">LIVE</span>
+</div>
+
+<div class="wrap">
+  <div class="layout">
+    <!-- CONTROLS -->
+    <aside class="controls">
+      <h2>Scenario</h2>
+      <div class="ctrl">
+        <label>Workload</label>
+        <select id="workload"></select>
+      </div>
+      <div class="ctrl">
+        <label>Batch size <span class="val" id="batchVal">1</span></label>
+        <input type="range" id="batch" min="0" max="18" value="0">
+      </div>
+      <div class="ctrl">
+        <label>Precision</label>
+        <div class="seg" id="precSeg"></div>
+      </div>
+      <div class="ctrl">
+        <label>GPUs in deployment <span class="val" id="gpuVal">1</span></label>
+        <input type="range" id="gpus" min="1" max="8" value="1">
+      </div>
+      <div class="ctrl">
+        <label>Cloud rate ($ / GPU-hr) <span class="val" id="rateVal">$4.89</span></label>
+        <input type="range" id="rate" min="200" max="1200" value="489">
+      </div>
+      <div class="ctrl">
+        <label>Latency SLA target <span class="val" id="slaVal">50 ms</span></label>
+        <input type="range" id="sla" min="1" max="200" value="50">
+      </div>
+      <div class="ctrl">
+        <label>Live telemetry</label>
+        <div class="seg">
+          <button id="liveOn" class="on">On</button>
+          <button id="liveOff">Off</button>
+        </div>
+      </div>
+      <button class="reset" id="reset">Reset scenario</button>
+      <div class="wl-note" id="wlNote"></div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main>
+      <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="card kpi accent-teal"><div class="label">Throughput</div>
+          <div><span class="big" id="kThru">—</span> <span class="unit" id="kThruU"></span></div>
+          <div class="delta" id="kThruD">&nbsp;</div></div>
+        <div class="card kpi accent-amber"><div class="label">Cost / 1M items</div>
+          <div><span class="big" id="kCost">—</span> <span class="unit">USD</span></div>
+          <div class="delta flat" id="kCostD">&nbsp;</div></div>
+        <div class="card kpi accent-red"><div class="label">Spend</div>
+          <div><span class="big" id="kSpend">—</span> <span class="unit">/ hour</span></div>
+          <div class="delta flat" id="kSpendD">&nbsp;</div></div>
+        <div class="card kpi"><div class="label">SLA status</div>
+          <div><span class="big" id="kSla">—</span></div>
+          <div class="delta" id="kSlaD">&nbsp;</div></div>
+      </div>
+
+      <div class="grid cols-3" style="margin-bottom:18px">
+        <div class="card">
+          <h3>GPU Utilization <span class="tag">busiest resource</span></h3>
+          <div class="chart" id="utilDonut"></div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--red)"></i>Used</span>
+            <span><i class="dot" style="background:var(--track,#1b2230)"></i>Headroom</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Throughput trend <span class="tag">last 24 ticks</span></h3>
+          <div class="chart" id="thruTrend"></div>
+        </div>
+        <div class="card">
+          <h3>Efficiency</h3>
+          <div class="statline"><span class="l">Performance / dollar</span><span class="v" id="ppd">—</span></div>
+          <div class="statline"><span class="l">Performance / watt</span><span class="v" id="ppw">—</span></div>
+          <div class="statline"><span class="l">Multi-GPU scaling</span><span class="v" id="scaleEff">—</span></div>
+          <div class="statline"><span class="l">VRAM in use</span><span class="v" id="vram">—</span></div>
+          <div class="statline"><span class="l">Board power</span><span class="v" id="power">—</span></div>
+          <div class="statline"><span class="l">Bound by</span><span class="v" id="bound">—</span></div>
+        </div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Monthly cost projection <span class="tag">24×7</span></h3>
+          <div class="chart" id="costTrend"></div>
+          <div class="note" id="costNote"></div>
+        </div>
+        <div class="card">
+          <h3>Cost efficiency vs batch size <span class="tag">why batching pays</span></h3>
+          <div class="chart" id="batchBars"></div>
+          <div class="note">Cost per million items drops as batching amortizes fixed launch/host overhead — until memory or compute saturates.</div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <strong>Simulated mockup.</strong> Figures are illustrative and generated on-device from the
+        knobs above — not real benchmarks. Cloud rate, SLA, and workload mix are yours to set.
+        See the Developer view for the per-layer (L0–L6) breakdown behind these outcomes.
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/sim.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+const cfg = { workload: 'llm7b', batch: 1, precision: null, numGPUs: 1, powerFrac: 1, tick: 0, rate: 4.89, sla: 50 };
+const BATCH_STOPS = [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144];
+let live = true, prev = null;
+
+// populate workload select
+const wlSel = document.getElementById('workload');
+Object.entries(WORKLOADS).forEach(([id,w]) => {
+  const o = document.createElement('option'); o.value=id; o.textContent=w.name; wlSel.appendChild(o);
+});
+wlSel.value = cfg.workload;
+
+// precision segmented
+const precSeg = document.getElementById('precSeg');
+PRECISIONS.forEach(p => {
+  const b=document.createElement('button'); b.textContent=p.toUpperCase(); b.dataset.p=p;
+  b.onclick=()=>{ cfg.precision=p; syncPrec(); render(); }; precSeg.appendChild(b);
+});
+function syncPrec(){ const eff=cfg.precision||WORKLOADS[cfg.workload].pref;
+  [...precSeg.children].forEach(b=>b.classList.toggle('on', b.dataset.p===eff)); }
+
+// listeners
+wlSel.onchange=()=>{ cfg.workload=wlSel.value; cfg.precision=null; syncPrec();
+  document.getElementById('wlNote').textContent=WORKLOADS[cfg.workload].note; render(); };
+document.getElementById('batch').oninput=e=>{ cfg.batch=BATCH_STOPS[+e.target.value];
+  document.getElementById('batchVal').textContent=cfg.batch.toLocaleString(); render(); };
+document.getElementById('gpus').oninput=e=>{ cfg.numGPUs=+e.target.value;
+  document.getElementById('gpuVal').textContent=cfg.numGPUs; render(); };
+document.getElementById('rate').oninput=e=>{ cfg.rate=+e.target.value/100;
+  document.getElementById('rateVal').textContent='$'+cfg.rate.toFixed(2); render(); };
+document.getElementById('sla').oninput=e=>{ cfg.sla=+e.target.value;
+  document.getElementById('slaVal').textContent=cfg.sla+' ms'; render(); };
+document.getElementById('liveOn').onclick=()=>{ live=true; setLive(); };
+document.getElementById('liveOff').onclick=()=>{ live=false; setLive(); };
+document.getElementById('reset').onclick=()=>{ location.reload(); };
+function setLive(){ document.getElementById('liveOn').classList.toggle('on',live);
+  document.getElementById('liveOff').classList.toggle('on',!live);
+  document.getElementById('liveBadge').style.display=live?'':'none'; }
+
+function delta(cur, old){ if(old==null) return '&nbsp;';
+  const d=(cur-old)/(Math.abs(old)||1)*100; const cls=Math.abs(d)<0.5?'flat':d>0?'up':'down';
+  const a=Math.abs(d)<0.5?'•':d>0?'▲':'▼'; return `<span class="${cls}">${a} ${Math.abs(d).toFixed(1)}%</span>`; }
+
+function render(){
+  const m = computeMetrics(cfg);
+  const cost = costModel(m, cfg.rate);
+
+  document.getElementById('kThru').textContent = fmtNum(m.throughput);
+  document.getElementById('kThruU').textContent = m.throughputUnit + '/s';
+  document.getElementById('kCost').textContent = cost.costPerMillion < 0.01 ? cost.costPerMillion.toFixed(4) : cost.costPerMillion.toFixed(2);
+  document.getElementById('kSpend').textContent = '$'+cost.hourlyCost.toFixed(2);
+
+  const slaOk = m.latencyP99 <= cfg.sla;
+  const kSla = document.getElementById('kSla');
+  kSla.textContent = slaOk ? 'MET' : 'MISS';
+  kSla.className = 'big '+(slaOk?'':'');
+  kSla.style.color = slaOk ? 'var(--green)' : 'var(--red)';
+  document.getElementById('kSlaD').innerHTML =
+    `<span class="${slaOk?'ok':'bad'}">p99 ${m.latencyP99.toFixed(1)} ms / ${cfg.sla} ms</span>`;
+
+  if(prev){
+    document.getElementById('kThruD').innerHTML = delta(m.throughput, prev.thru);
+    document.getElementById('kCostD').innerHTML = delta(prev.cost, cost.costPerMillion); // lower better
+    document.getElementById('kSpendD').innerHTML = '<span class="flat">'+cfg.numGPUs+' GPU'+(cfg.numGPUs>1?'s':'')+'</span>';
+  }
+
+  donut(document.getElementById('utilDonut'),
+    [{value:m.busy,color:C.red},{value:1-m.busy,color:C.track}],
+    {center:(m.busy*100).toFixed(0)+'%', centerSub: m.boundBy+'-bound'});
+
+  const ts = timeSeries(cfg, 24).map(x=>x.throughput);
+  lineChart(document.getElementById('thruTrend'),
+    [{data:ts,color:C.teal}], {w:300,h:170,area:true,xlabel:m.throughputUnit+'/s over time'});
+
+  document.getElementById('ppd').textContent = fmtNum(cost.perfPerDollar)+' '+m.wl.short+'/$';
+  document.getElementById('ppw').textContent = fmtNum(cost.perfPerWatt)+' '+m.wl.short+'/W';
+  document.getElementById('scaleEff').textContent = (m.scaleEff*100).toFixed(0)+'%  ('+m.numGPUs+'×)';
+  document.getElementById('vram').textContent = m.memUsedGB.toFixed(1)+' / '+m.memTotalGB+' GB';
+  document.getElementById('power').textContent = Math.round(m.powerW)+' W';
+  document.getElementById('bound').textContent = m.boundBy + (m.wl.cpuBound>0.4?' + CPU':'');
+
+  // monthly projection across 1..8 GPUs
+  const months=[]; for(let g=1; g<=8; g++){ const mm=computeMetrics({...cfg,numGPUs:g});
+    months.push(costModel(mm,cfg.rate).monthly); }
+  lineChart(document.getElementById('costTrend'),
+    [{data:months,color:C.amber}], {w:500,h:180,area:true,xlabel:'GPUs 1→8 · projected $/month'});
+  document.getElementById('costNote').textContent =
+    'At '+cfg.numGPUs+' GPU'+(cfg.numGPUs>1?'s':'')+': ≈ $'+Math.round(cost.monthly).toLocaleString()+' / month (24×7).';
+
+  // cost-per-million vs batch
+  const bset=[1,8,64,512,4096,32768];
+  const bars = bset.map(b=>{ const mm=computeMetrics({...cfg,batch:b});
+    const cc=costModel(mm,cfg.rate);
+    return {label:fmtNum(b),value:cc.costPerMillion,color:b===cfg.batch?C.red:C.teal,
+      valLabel:'$'+(cc.costPerMillion<0.01?cc.costPerMillion.toFixed(3):cc.costPerMillion.toFixed(2))}; });
+  barChart(document.getElementById('batchBars'), bars, {w:500,h:200});
+
+  prev = { thru:m.throughput, cost:cost.costPerMillion };
+}
+
+syncPrec();
+document.getElementById('wlNote').textContent=WORKLOADS[cfg.workload].note;
+render();
+setInterval(()=>{ if(live){ cfg.tick++; render(); } }, 1500);
+</script>
+</body>
+</html>

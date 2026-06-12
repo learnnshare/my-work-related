@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MI300X Performance Console — Mockup</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">▲</div>
+    <div>
+      <h1>MI300X Performance Console</h1>
+      <div class="sub">AMD Instinct™ MI300X · simulated data · product mockup</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <span class="badge">PROTOTYPE</span>
+</div>
+
+<div class="hero">
+  <h1>Choose your view</h1>
+  <p>An interactive mockup of the final deliverable: a performance console for robotics
+  workloads on the AMD Instinct MI300X. All numbers are <strong>simulated</strong> and
+  illustrative — they show the look, feel, and behaviour of the product, not benchmarks.</p>
+</div>
+
+<div class="choose">
+  <a class="choice" href="executive.html">
+    <div class="ic">📊</div>
+    <h2>Executive Dashboard</h2>
+    <p>Outcome metrics for decision-makers: throughput, cost per million inferences,
+    performance-per-dollar, SLA status, utilization, and monthly TCO projection.</p>
+    <span class="go">Open executive view →</span>
+  </a>
+  <a class="choice" href="developer.html">
+    <div class="ic">🛠️</div>
+    <h2>Developer Dashboard</h2>
+    <p>Deep stack telemetry across <strong>Layer 0 → Layer 6</strong> of the AMD/ROCm
+    stack — silicon, firmware, driver, runtime, libraries, framework, application —
+    plus roofline, latency distribution, and kernel timeline.</p>
+    <span class="go">Open developer view →</span>
+  </a>
+</div>
+
+<div class="wrap" style="max-width:860px">
+  <div class="disclaimer">
+    <strong>About this mockup.</strong> Built as a self-contained set of HTML/CSS/JS files
+    (no internet required — open <code>index.html</code> directly). The knobs on each
+    dashboard drive a shared simulation engine (<code>assets/sim.js</code>) that produces
+    plausible-but-fake metrics reflecting real behaviour: batch-1 latency is launch-bound,
+    decode is bandwidth-bound, multi-GPU scaling loses efficiency, and so on. Replace the
+    sim engine with real telemetry to turn this into the production console.
+  </div>
+</div>
+</body>
+</html>

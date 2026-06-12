@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Developer Dashboard — MI300X Console</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">▲</div>
+    <div>
+      <h1>MI300X Performance Console</h1>
+      <div class="sub">Developer view · L0–L6 stack telemetry · simulated</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">Home</a>
+  <a class="navlink" href="executive.html">Executive</a>
+  <a class="navlink active" href="developer.html">Developer</a>
+  <span class="badge live" id="liveBadge">LIVE</span>
+</div>
+
+<div class="wrap">
+  <div class="layout">
+    <!-- CONTROLS -->
+    <aside class="controls">
+      <h2>Configuration</h2>
+      <div class="ctrl">
+        <label>Workload</label>
+        <select id="workload"></select>
+      </div>
+      <div class="ctrl">
+        <label>Batch size <span class="val" id="batchVal">1</span></label>
+        <input type="range" id="batch" min="0" max="18" value="0">
+      </div>
+      <div class="ctrl">
+        <label>Precision</label>
+        <div class="seg" id="precSeg"></div>
+      </div>
+      <div class="ctrl">
+        <label>Partition mode</label>
+        <div class="seg">
+          <button id="spx" class="on">SPX</button>
+          <button id="cpx">CPX</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <label>GPUs <span class="val" id="gpuVal">1</span></label>
+        <input type="range" id="gpus" min="1" max="8" value="1">
+      </div>
+      <div class="ctrl">
+        <label>Power cap <span class="val" id="powVal">750 W</span></label>
+        <input type="range" id="power" min="40" max="100" value="100">
+      </div>
+      <div class="ctrl">
+        <label>Live telemetry</label>
+        <div class="seg">
+          <button id="liveOn" class="on">On</button>
+          <button id="liveOff">Off</button>
+        </div>
+      </div>
+      <button class="reset" id="reset">Reset configuration</button>
+      <div class="wl-note" id="wlNote"></div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main>
+      <!-- summary strip -->
+      <div class="grid cols-4" style="margin-bottom:18px">
+        <div class="card kpi accent-teal"><div class="label">E2E latency p50</div>
+          <div><span class="big" id="kLat">—</span> <span class="unit">ms</span></div>
+          <div class="delta flat" id="kLatD">p99 <span id="kLat99">—</span> ms</div></div>
+        <div class="card kpi"><div class="label">Throughput</div>
+          <div><span class="big" id="kThru">—</span> <span class="unit" id="kThruU"></span></div></div>
+        <div class="card kpi accent-amber"><div class="label">Achieved compute</div>
+          <div><span class="big" id="kTflops">—</span> <span class="unit">TFLOPS</span></div>
+          <div class="delta flat">peak <span id="kPeak">—</span></div></div>
+        <div class="card kpi accent-red"><div class="label">HBM3 bandwidth</div>
+          <div><span class="big" id="kBw">—</span> <span class="unit">TB/s</span></div>
+          <div class="delta flat">of 5.3 TB/s</div></div>
+      </div>
+
+      <!-- analysis charts -->
+      <div class="grid cols-3" style="margin-bottom:20px">
+        <div class="card">
+          <h3>Roofline <span class="tag">where you sit</span></h3>
+          <div class="chart" id="roofline"></div>
+        </div>
+        <div class="card">
+          <h3>Latency distribution <span class="tag">simulated</span></h3>
+          <div class="chart" id="latHist"></div>
+        </div>
+        <div class="card">
+          <h3>Kernel dispatch timeline</h3>
+          <div class="chart" id="timeline"></div>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--teal)"></i>compute</span>
+            <span><i class="dot" style="background:var(--blue)"></i>copy</span>
+            <span><i class="dot" style="background:var(--purple)"></i>collective</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color:var(--text-hi);font-size:15px;margin:0 0 12px;display:flex;gap:10px;align-items:center">
+        AMD / ROCm stack telemetry
+        <span class="tag" style="font-size:10px;border:1px solid var(--border2);color:var(--text-dim);padding:2px 9px;border-radius:999px">Layer 0 → Layer 6</span>
+        <span style="flex:1"></span>
+        <button class="reset" style="width:auto;padding:4px 12px" id="toggleAll">Collapse all</button>
+      </h3>
+      <div id="layers"></div>
+
+      <div class="disclaimer">
+        <strong>Simulated mockup.</strong> Every value is generated on-device from the configuration
+        knobs (<code>assets/sim.js</code>) and reflects the <em>shape</em> of real behaviour — not
+        measured benchmarks. In production, each layer panel maps to a real telemetry source:
+        L0 hardware counters (rocprofiler), L1 SMU/partition state, L2 amdgpu/KFD, L3 ROCr/HSA,
+        L4 rocBLAS/MIOpen/RCCL, L5 PyTorch profiler, L6 application instrumentation.
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/sim.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+const cfg = { workload:'gemm', batch:1, precision:null, numGPUs:1, partition:'spx', powerFrac:1, tick:0 };
+const BATCH_STOPS = [1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144];
+const LAYER_COLORS = ['#ED1C24','#FF7A45','#FFB100','#39D353','#00C2B2','#3FA7FF','#B07CFF'];
+let live=true, collapsed=false, builtLayers=false;
+
+const wlSel=document.getElementById('workload');
+Object.entries(WORKLOADS).forEach(([id,w])=>{ const o=document.createElement('option');
+  o.value=id; o.textContent=w.name; wlSel.appendChild(o); });
+wlSel.value=cfg.workload;
+
+const precSeg=document.getElementById('precSeg');
+PRECISIONS.forEach(p=>{ const b=document.createElement('button'); b.textContent=p.toUpperCase();
+  b.dataset.p=p; b.onclick=()=>{ cfg.precision=p; syncPrec(); render(); }; precSeg.appendChild(b); });
+function syncPrec(){ const eff=cfg.precision||WORKLOADS[cfg.workload].pref;
+  [...precSeg.children].forEach(b=>b.classList.toggle('on',b.dataset.p===eff)); }
+
+wlSel.onchange=()=>{ cfg.workload=wlSel.value; cfg.precision=null; syncPrec();
+  document.getElementById('wlNote').textContent=WORKLOADS[cfg.workload].note; render(); };
+document.getElementById('batch').oninput=e=>{ cfg.batch=BATCH_STOPS[+e.target.value];
+  document.getElementById('batchVal').textContent=cfg.batch.toLocaleString(); render(); };
+document.getElementById('gpus').oninput=e=>{ cfg.numGPUs=+e.target.value;
+  document.getElementById('gpuVal').textContent=cfg.numGPUs; render(); };
+document.getElementById('power').oninput=e=>{ cfg.powerFrac=+e.target.value/100;
+  document.getElementById('powVal').textContent=Math.round(cfg.powerFrac*750)+' W'; render(); };
+document.getElementById('spx').onclick=()=>{ cfg.partition='spx'; syncPart(); render(); };
+document.getElementById('cpx').onclick=()=>{ cfg.partition='cpx'; syncPart(); render(); };
+function syncPart(){ document.getElementById('spx').classList.toggle('on',cfg.partition==='spx');
+  document.getElementById('cpx').classList.toggle('on',cfg.partition==='cpx'); }
+document.getElementById('liveOn').onclick=()=>{ live=true; setLive(); };
+document.getElementById('liveOff').onclick=()=>{ live=false; setLive(); };
+document.getElementById('reset').onclick=()=>location.reload();
+function setLive(){ document.getElementById('liveOn').classList.toggle('on',live);
+  document.getElementById('liveOff').classList.toggle('on',!live);
+  document.getElementById('liveBadge').style.display=live?'':'none'; }
+document.getElementById('toggleAll').onclick=function(){ collapsed=!collapsed;
+  document.querySelectorAll('.layer').forEach(l=>l.classList.toggle('collapsed',collapsed));
+  this.textContent=collapsed?'Expand all':'Collapse all'; };
+
+function fmtMetric(mt){
+  if(mt.fmt==='text') return `<span class="pill">${mt.v}</span>`;
+  if(mt.fmt==='count') return `${(+mt.v).toLocaleString()}${mt.unit?'<span class="mu">'+mt.unit+'</span>':''}`;
+  if(mt.fmt==='big') return `${fmtNum(mt.v)}${mt.unit?'<span class="mu">'+mt.unit+'</span>':''}`;
+  if(mt.fmt==='k') return `${fmtNum(mt.v*1000)}<span class="mu">/s</span>`;
+  const v = typeof mt.v==='number' ? (mt.v>=100?Math.round(mt.v).toLocaleString():mt.v) : mt.v;
+  return `${v}${mt.unit?'<span class="mu">'+mt.unit+'</span>':''}`;
+}
+
+function buildLayerDOM(layers){
+  const host=document.getElementById('layers'); host.innerHTML='';
+  layers.forEach(L=>{
+    const color=LAYER_COLORS[L.id];
+    const div=document.createElement('div'); div.className='layer'; div.style.setProperty('--accent',color);
+    div.innerHTML=`
+      <div class="layer-head">
+        <div class="layer-id">${L.id}</div>
+        <div class="layer-title"><div class="name">${L.name}</div><div class="sub">${L.sub}</div></div>
+        <div class="layer-chev">▾</div>
+      </div>
+      <div class="layer-body" id="lb${L.id}"></div>`;
+    div.querySelector('.layer-head').onclick=()=>div.classList.toggle('collapsed');
+    host.appendChild(div);
+  });
+  builtLayers=true;
+}
+
+function renderLayers(layers){
+  if(!builtLayers) buildLayerDOM(layers);
+  layers.forEach(L=>{
+    const body=document.getElementById('lb'+L.id);
+    body.innerHTML = L.metrics.map(mt=>{
+      let bar='';
+      if(mt.max && typeof mt.v==='number'){ const f=Math.max(0,Math.min(1,mt.v/mt.max));
+        const col=f>0.85?'var(--red)':f>0.6?'var(--amber)':'var(--teal)';
+        bar=`<div class="mbar"><i style="width:${(f*100).toFixed(0)}%;background:${col}"></i></div>`; }
+      return `<div class="mcell"><div class="mk">${mt.k}</div><div class="mv">${fmtMetric(mt)}</div>${bar}</div>`;
+    }).join('');
+  });
+}
+
+function render(){
+  const m=computeMetrics(cfg);
+  document.getElementById('kLat').textContent=m.latencyP50.toFixed(m.latencyP50<1?3:2);
+  document.getElementById('kLat99').textContent=m.latencyP99.toFixed(2);
+  document.getElementById('kThru').textContent=fmtNum(m.throughput);
+  document.getElementById('kThruU').textContent=m.throughputUnit+'/s';
+  document.getElementById('kTflops').textContent=fmtNum(m.achievedTflops);
+  document.getElementById('kPeak').textContent=fmtNum(m.peakTflops)+' TFLOPS';
+  document.getElementById('kBw').textContent=m.achievedBwTBs.toFixed(2);
+
+  roofline(document.getElementById('roofline'),
+    {x:m.arithIntensity, y:m.achievedTflops},
+    {peakTflops:m.peakTflops, peakBwTBs:m.peakBwTBs, w:300, h:230});
+  histogram(document.getElementById('latHist'), m.latencyP50, {w:300,h:170});
+
+  // timeline: synthesize a few representative kernels weighted by regime
+  const k = m.boundBy==='compute'
+    ? [{name:'GEMM',dur:8},{name:'epilogue',dur:1},{name:'copy',dur:0.6}]
+    : [{name:'load',dur:5},{name:'attn',dur:3},{name:'copy',dur:2},{name:'reduce',dur:1.4}];
+  if(m.numGPUs>1) k.push({name:'all-reduce',dur:2.5});
+  timeline(document.getElementById('timeline'), k, {w:300,h:110});
+
+  renderLayers(m.layers);
+}
+
+syncPrec(); syncPart();
+document.getElementById('wlNote').textContent=WORKLOADS[cfg.workload].note;
+render();
+setInterval(()=>{ if(live){ cfg.tick++; render(); } }, 1500);
+</script>
+</body>
+</html>
