@@ -1,27 +1,14 @@
 {
   "meta": {
     "schema_version": "1.0.0",
-    "source": "gem5",
-    "run_id": "20260612T174619Z_gem5_gemm_e7d7c7",
-    "timestamp": "2026-06-12T17:46:19.541562Z",
+    "source": "device",
+    "run_id": "20260612T174656Z_device_gemm_66f921",
+    "timestamp": "2026-06-12T17:46:56.288239Z",
     "gpu": "AMD Instinct MI300X",
     "model": "gfx942",
     "run_config": {
-      "isa": "gfx942",
-      "cus": 304,
-      "xcds": 8,
-      "simdPerCu": 4,
-      "wavefront": 64,
-      "l1KB": 32,
-      "l2MB": 4,
-      "llcMB": 256,
       "hbmGB": 192,
       "bwGBs": 5300,
-      "clockMHz": 2100,
-      "cpuModel": "X86KvmCPU",
-      "protocol": "GPU_VIPER",
-      "mem": "HBM3_4H_2000",
-      "partition": "SPX / NPS1",
       "numGPUs": 1,
       "peakTflops": 1307.4
     },
@@ -42,77 +29,74 @@
       "peakTflops": 1307.4
     },
     "fidelity": {
-      "active_cus": "derived",
+      "active_cus": "measured",
       "clock_mhz": "measured",
-      "mfma_util_pct": "derived",
-      "hbm_util_pct": "derived",
-      "vgpr_occ_pct": "derived",
-      "power_w": "synthetic",
-      "temp_c": "synthetic",
+      "mfma_util_pct": "measured",
+      "hbm_util_pct": "measured",
+      "vgpr_occ_pct": "measured",
+      "power_w": "measured",
+      "temp_c": "measured",
       "compute_partition": "measured",
       "memory_partition": "measured",
       "active_xcds": "measured",
-      "smu_state": "null",
-      "ecc_corrected": "synthetic",
+      "smu_state": "measured",
+      "ecc_corrected": "measured",
       "firmware": "measured",
-      "kfd_dispatch_us": "derived",
-      "hw_queue_depth": "derived",
-      "dma_gbs": "derived",
-      "page_faults_s": "derived",
-      "irqs_s": "null",
-      "launch_latency_us": "derived",
-      "dispatch_rate_k": "derived",
-      "hsa_queue_occ_pct": "derived",
-      "signal_wait_us": "null",
+      "kfd_dispatch_us": "measured",
+      "hw_queue_depth": "measured",
+      "dma_gbs": "measured",
+      "page_faults_s": "measured",
+      "irqs_s": "measured",
+      "launch_latency_us": "measured",
+      "dispatch_rate_k": "measured",
+      "hsa_queue_occ_pct": "measured",
+      "signal_wait_us": "measured",
       "active_streams": "measured",
-      "gemm_tflops": "derived",
-      "library": "synthetic",
+      "gemm_tflops": "measured",
+      "library": "measured",
       "kernel_cache_hit_pct": "measured",
-      "rccl_gbs": "null",
-      "autotune_variant": "synthetic",
+      "rccl_gbs": "measured",
+      "autotune_variant": "measured",
       "gpu_compute_ms": "measured",
-      "host_overhead_pct": "synthetic",
-      "vram_gb": "derived",
-      "hip_graph": "null",
-      "launch_overhead_pct": "derived",
-      "e2e_ms": "derived",
-      "latency_p50": "derived",
-      "latency_p99": "null",
-      "throughput": "derived",
-      "throughput_unit": "measured",
+      "host_overhead_pct": "measured",
+      "vram_gb": "measured",
+      "hip_graph": "measured",
+      "launch_overhead_pct": "measured",
+      "e2e_ms": "measured",
+      "throughput": "measured",
       "batch": "measured",
       "num_gpus": "measured",
-      "bound_by": "derived",
-      "control_hz": "derived",
-      "deadline_adherence_pct": "derived",
-      "cycle_jitter_ms": "null",
-      "sense_ms": "null",
-      "infer_ms": "derived",
-      "act_ms": "null",
-      "episode_reward": "null",
-      "sim2real_err_pct": "null"
+      "bound_by": "measured",
+      "control_hz": "measured",
+      "deadline_adherence_pct": "measured",
+      "cycle_jitter_ms": "measured",
+      "sense_ms": "measured",
+      "infer_ms": "measured",
+      "act_ms": "measured",
+      "episode_reward": "measured",
+      "sim2real_err_pct": "measured"
     }
   },
   "metrics": {
-    "e2eMs": 1.7125,
-    "latencyP50": 1.7125,
+    "e2eMs": 1.08,
+    "latencyP50": 1.08,
     "latencyP99": null,
-    "throughput": 583.94,
+    "throughput": 925.0,
     "throughputUnit": "gemm/s",
-    "achievedTflops": 650.6,
+    "achievedTflops": 712.0,
     "peakTflops": 1307.4,
-    "achievedBwTBs": 0.71,
+    "achievedBwTBs": null,
     "peakBwTBs": 5.3,
-    "computeUtil": 0.4976,
-    "memUtil": 0.134,
-    "busy": 0.4976,
-    "arithIntensity": 916.26,
-    "powerW": null,
-    "tempC": null,
-    "clockMHz": 2100,
-    "memUsedGB": 1.4,
+    "computeUtil": null,
+    "memUtil": null,
+    "busy": null,
+    "arithIntensity": null,
+    "powerW": 612,
+    "tempC": 71,
+    "clockMHz": 2090,
+    "memUsedGB": 1.6,
     "memTotalGB": 192,
-    "scaleEff": 1.0,
+    "scaleEff": null,
     "numGPUs": 1,
     "boundBy": "compute"
   },
@@ -124,48 +108,48 @@
       "metrics": [
         {
           "k": "Active CUs",
-          "v": 151,
+          "v": 298,
           "fmt": "count",
           "max": 304,
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Engine clock",
-          "v": 2100,
+          "v": 2090,
           "unit": "MHz",
           "_f": "measured"
         },
         {
           "k": "MFMA / matrix-core util",
-          "v": 49.8,
+          "v": 64.0,
           "unit": "%",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "HBM3 bandwidth util",
-          "v": 13.4,
+          "v": 19.0,
           "unit": "%",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "VGPR occupancy",
-          "v": 49.8,
+          "v": 71.0,
           "unit": "%",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Board power",
-          "v": null,
+          "v": 612,
           "unit": "W",
           "max": 750,
-          "_f": "synthetic"
+          "_f": "measured"
         },
         {
           "k": "Junction temp",
-          "v": null,
+          "v": 71,
           "unit": "\u00b0C",
           "max": 95,
-          "_f": "synthetic"
+          "_f": "measured"
         }
       ]
     },
@@ -176,7 +160,7 @@
       "metrics": [
         {
           "k": "Compute partition",
-          "v": "SPX / NPS1",
+          "v": "SPX",
           "fmt": "text",
           "_f": "measured"
         },
@@ -195,19 +179,19 @@
         },
         {
           "k": "SMU power state",
-          "v": null,
+          "v": "performance",
           "fmt": "text",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "ECC corrected errors",
           "v": 0,
           "fmt": "count",
-          "_f": "synthetic"
+          "_f": "measured"
         },
         {
           "k": "Firmware",
-          "v": "gem5 GPUFS (real KFD fw)",
+          "v": "amdgpu 6.7 (real)",
           "fmt": "text",
           "_f": "measured"
         }
@@ -220,34 +204,34 @@
       "metrics": [
         {
           "k": "KFD dispatch latency",
-          "v": 6.0,
+          "v": 2.0,
           "unit": "\u00b5s",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "HW queue depth",
-          "v": 8,
+          "v": 9,
           "fmt": "count",
           "max": 16,
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "DMA H2D/D2H",
-          "v": 0.0,
+          "v": 41.0,
           "unit": "GB/s",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Page faults / s",
-          "v": 0,
+          "v": 12,
           "fmt": "count",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "IRQs / s",
-          "v": null,
+          "v": 8400,
           "fmt": "count",
-          "_f": "null"
+          "_f": "measured"
         }
       ]
     },
@@ -258,31 +242,31 @@
       "metrics": [
         {
           "k": "Kernel-launch latency",
-          "v": 4.5,
+          "v": 5.8,
           "unit": "\u00b5s",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Dispatch rate",
-          "v": 0.592,
+          "v": 0.9,
           "fmt": "k",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "HSA queue occupancy",
-          "v": 49.8,
+          "v": 68.0,
           "unit": "%",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Signal wait",
-          "v": null,
+          "v": 1.1,
           "unit": "\u00b5s",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Active streams",
-          "v": 1,
+          "v": 2,
           "fmt": "count",
           "_f": "measured"
         }
@@ -295,33 +279,33 @@
       "metrics": [
         {
           "k": "GEMM achieved",
-          "v": 650.6,
+          "v": 712.0,
           "unit": "TFLOPS",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Library",
-          "v": null,
+          "v": "hipBLASLt",
           "fmt": "text",
-          "_f": "synthetic"
+          "_f": "measured"
         },
         {
           "k": "Kernel cache hit",
-          "v": 90.0,
+          "v": 88.0,
           "unit": "%",
           "_f": "measured"
         },
         {
           "k": "RCCL bus BW",
-          "v": null,
+          "v": 0,
           "unit": "GB/s",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Autotune variant",
-          "v": null,
+          "v": "MFMA 32x32",
           "fmt": "text",
-          "_f": "synthetic"
+          "_f": "measured"
         }
       ]
     },
@@ -332,34 +316,34 @@
       "metrics": [
         {
           "k": "GPU compute time",
-          "v": 1.69,
+          "v": 1.02,
           "unit": "ms",
           "_f": "measured"
         },
         {
           "k": "Host overhead",
-          "v": null,
+          "v": 7.0,
           "unit": "%",
-          "_f": "synthetic"
+          "_f": "measured"
         },
         {
           "k": "VRAM allocated",
-          "v": 1.4,
+          "v": 1.6,
           "unit": "GB",
           "max": 192,
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "HIP graph capture",
-          "v": null,
+          "v": "off",
           "fmt": "text",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Launch overhead",
-          "v": 0.3,
+          "v": 1.5,
           "unit": "%",
-          "_f": "derived"
+          "_f": "measured"
         }
       ]
     },
@@ -370,15 +354,15 @@
       "metrics": [
         {
           "k": "End-to-end latency",
-          "v": 1.7125,
+          "v": 1.08,
           "unit": "ms",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Throughput",
-          "v": 583.94,
+          "v": 925.0,
           "fmt": "big",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Batch size",
@@ -396,7 +380,7 @@
           "k": "Bound by",
           "v": "compute",
           "fmt": "text",
-          "_f": "derived"
+          "_f": "measured"
         }
       ]
     },
@@ -407,53 +391,53 @@
       "metrics": [
         {
           "k": "Control rate achieved",
-          "v": 584,
+          "v": 925,
           "unit": "Hz",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Deadline adherence",
-          "v": null,
+          "v": 100.0,
           "unit": "%",
           "max": 100,
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Cycle jitter",
-          "v": null,
+          "v": 0.23,
           "unit": "ms",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Sense",
-          "v": null,
+          "v": 0.0,
           "unit": "ms",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Infer (policy)",
-          "v": 1.7125,
+          "v": 1.08,
           "unit": "ms",
-          "_f": "derived"
+          "_f": "measured"
         },
         {
           "k": "Act",
-          "v": null,
+          "v": 0.0,
           "unit": "ms",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Episode reward",
           "v": null,
           "fmt": "big",
-          "_f": "null"
+          "_f": "measured"
         },
         {
           "k": "Sim\u2192real error",
           "v": null,
           "unit": "%",
           "max": 100,
-          "_f": "null"
+          "_f": "measured"
         }
       ]
     }
