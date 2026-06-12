@@ -1,0 +1,12 @@
+# MI300X / gem5 metrics pipeline — Python dependencies
+# Core (required everywhere the orchestrator/normalizer runs):
+pyyaml>=6.0
+
+# Predictor baseline (optional; falls back to a stdlib model if missing):
+scikit-learn>=1.2
+numpy>=1.23
+
+# On the real MI300X box you also need PyTorch built for ROCm. Do NOT pip-install
+# the default CUDA wheel — use the ROCm index, e.g.:
+#   pip install --index-url https://download.pytorch.org/whl/rocm6.1 torch
+# (see scripts/02_setup_cloud_mi300x.sh)
