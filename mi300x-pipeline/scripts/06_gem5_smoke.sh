@@ -17,6 +17,8 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$REPO/bench/vectoradd"
 OUT="$REPO/runs/gem5_smoke/m5out"
 CUS="${CUS:-4}"; N="${N:-2048}"; ITERS="${ITERS:-1}"; GFX="${GFX:-gfx942}"
+# MI300X is a DISCRETE gpu -> apu_se.py needs --dgpu for gfx942/gfx90a/gfx908
+DGPU="${DGPU:---dgpu}"
 
 echo "== gem5 GPUSE smoke test =="
 [ -f "$ENVSH" ] && { . "$ENVSH"; echo "sourced $ENVSH"; }
@@ -28,11 +30,11 @@ hipcc "$REPO/bench/vectoradd.cpp" -o "$APP" 2>&1 | grep -i error
 [ -x "$APP" ] || { echo "compile failed"; exit 1; }
 
 mkdir -p "$OUT"
-echo "running: gem5 apu_se.py  gfx=$GFX  CUs=$CUS  vectoradd n=$N iters=$ITERS"
+echo "running: gem5 apu_se.py $DGPU  gfx=$GFX  CUs=$CUS  vectoradd n=$N iters=$ITERS"
 echo "(this is gem5 — be patient; a tiny run can still take a few minutes)"
 cd "$GEM5_DIR" || exit 1
 "$B" --outdir="$OUT" configs/example/apu_se.py \
-    --gfx-version "$GFX" -u "$CUS" \
+    $DGPU --gfx-version "$GFX" -u "$CUS" \
     -c "$APP" -o "$N $ITERS" 2>&1 | tail -40
 
 echo
