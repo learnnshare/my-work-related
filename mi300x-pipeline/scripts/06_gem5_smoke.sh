@@ -39,8 +39,8 @@ cd "$GEM5_DIR" || exit 1
 
 echo
 echo "== result =="
-if [ -f "$OUT/stats.txt" ]; then
-    echo "stats.txt produced — key GPU stats:"
+if [ -s "$OUT/stats.txt" ] && grep -q "simSeconds" "$OUT/stats.txt"; then
+    echo "SUCCESS — gem5 simulated the kernel. Key GPU stats:"
     grep -iE "simSeconds|system.cpu.*numCycles|gpu.*numCycles|TCC|TCP|numKernels|CUs.*Inst|mem_ctrls.*bytes" \
         "$OUT/stats.txt" | head -25 | sed 's/^/  /'
     echo
@@ -51,6 +51,8 @@ if [ -f "$OUT/stats.txt" ]; then
     echo "  cp -r $OUT $REPO/../testfolder/gem5_smoke_m5out"
     echo "  git add ../testfolder/gem5_smoke_m5out && git commit -m 'gem5 smoke m5out' && git push"
 else
-    echo "NO stats.txt — the run didn't complete. Paste the output above; the"
-    echo "common GPUSE issues are ROCm-version/driver mismatch or kernel dispatch."
+    echo "RUN DID NOT SIMULATE (no simSeconds in stats.txt) — see the error above."
+    echo "If it's 'Incorrect gfx version', SE mode (apu_se.py) doesn't support this"
+    echo "ISA. gfx942/MI300 needs GPUFS (gpufs/mi300.py). For an SE smoke test that"
+    echo "works now, retry with an SE-supported ISA:   GFX=gfx90a bash \$0"
 fi
