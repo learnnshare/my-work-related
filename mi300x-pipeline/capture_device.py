@@ -38,9 +38,15 @@ EA_BYTES = 64
 # per-workload flop model (flops per grid thread) for achievedTflops
 FLOP_MODEL = {"vectoradd": 128}   # vadd: 64 inner iters * (mul+add)
 
-PRIMARY_PMC = ["SQ_WAVES", "GRBM_COUNT", "GRBM_GUI_ACTIVE",
-               "TCC_HIT_sum", "TCC_MISS_sum", "TCC_EA_RDREQ_sum", "TCC_EA_WRREQ_sum"]
-FALLBACK_PMC = ["SQ_WAVES", "GRBM_COUNT", "GRBM_GUI_ACTIVE"]
+# Independent counter groups — each is its own rocprofv3 pass, so a group the VF
+# rejects doesn't kill the others. Add/adjust names per `rocprofv3-avail info --pmc`.
+PMC_GROUPS = [
+    ["SQ_WAVES", "GRBM_COUNT", "GRBM_GUI_ACTIVE"],   # core activity (known-good)
+    ["TCC_HIT_sum", "TCC_MISS_sum"],                  # L2 cache hit
+    ["TCC_EA_RDREQ_sum", "TCC_EA_WRREQ_sum"],         # memory requests (×64B)
+    ["FETCH_SIZE", "WRITE_SIZE"],                     # memory bytes (KB) — alt
+    ["SQ_INSTS_VALU", "SQ_INSTS_VALU_MFMA_MOPS_F16"], # compute/MFMA — alt
+]
 
 
 def sh(cmd, **kw):
@@ -71,21 +77,32 @@ def run_rocprofv3(app, outdir, pmc=None, trace=False):
     return r.returncode, (r.stdout + r.stderr)
 
 
+def _merge_counters(dst, src):
+    for k, cm in src.items():
+        dst.setdefault(k, {}).update(cm)
+
+
 def capture(app, raw_dir):
-    """Run trace + pmc and return parsed (traces, counters, agent)."""
-    tdir, pdir = raw_dir / "trace", raw_dir / "pmc"
-    rc, log = run_rocprofv3(app, tdir, trace=True)
+    """Run trace + per-group pmc passes; merge whatever succeeds."""
+    tdir = raw_dir / "trace"
+    rc, _ = run_rocprofv3(app, tdir, trace=True)
     print(f"  kernel-trace rc={rc}")
-    rc, log = run_rocprofv3(app, pdir, pmc=PRIMARY_PMC)
-    if rc != 0:
-        print(f"  primary --pmc failed (rc={rc}); retrying minimal set")
-        rc, log = run_rocprofv3(app, pdir, pmc=FALLBACK_PMC)
-        print(f"  fallback --pmc rc={rc}")
     t = R.find_outputs(str(tdir))
-    p = R.find_outputs(str(pdir))
     traces = R.parse_kernel_trace(t["kernel_trace"])
-    counters = R.parse_counters(p["counters"])
-    agent = R.parse_agent_info(p["agent_info"] or t["agent_info"])
+    agent = R.parse_agent_info(t["agent_info"])
+
+    counters = {}
+    for i, grp in enumerate(PMC_GROUPS):
+        pdir = raw_dir / f"pmc{i}"
+        rc, log = run_rocprofv3(app, pdir, pmc=grp)
+        if rc != 0:
+            print(f"  pmc group {grp} rejected (rc={rc}) — skipping")
+            continue
+        p = R.find_outputs(str(pdir))
+        _merge_counters(counters, R.parse_counters(p["counters"]))
+        if not agent:
+            agent = R.parse_agent_info(p["agent_info"])
+        print(f"  pmc group {grp} ok")
     return traces, counters, agent
 
 
@@ -98,6 +115,9 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     grid_total = sum((t["grid"] or 0) for t in kdisp)
     vgpr = max((t["vgpr"] or 0) for t in kdisp) if kdisp else None
     c = counters.get(name, {})
+    print(f"  [counters collected for {name[:40]}]:")
+    for cn in sorted(c):
+        print(f"     {cn} = {c[cn]}")
 
     cu = agent.get("cu_count") or 304
     clk = agent.get("max_clk_mhz") or 2100
@@ -110,7 +130,11 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
 
     rd = c.get("TCC_EA_RDREQ_sum")
     wr = c.get("TCC_EA_WRREQ_sum")
-    total_bytes = ((rd or 0) + (wr or 0)) * EA_BYTES if (rd is not None or wr is not None) else None
+    if rd is not None or wr is not None:
+        total_bytes = ((rd or 0) + (wr or 0)) * EA_BYTES
+    else:
+        fz, wz = c.get("FETCH_SIZE"), c.get("WRITE_SIZE")    # KB (rocprofiler derived)
+        total_bytes = ((fz or 0) + (wz or 0)) * 1024 if (fz is not None or wz is not None) else None
     achieved_bw = (total_bytes / kernel_time_s / 1e12) if (total_bytes and kernel_time_s) else None
 
     fpt = FLOP_MODEL.get(workload_id)
@@ -172,6 +196,8 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
         bound = "compute" if compute_util >= mem_util else "memory"
     elif mem_util is not None:
         bound = "memory"
+    elif compute_util is not None:
+        bound = "compute"
     put("bound_by", bound, "derived")
     # L7 (microkernel, not a control loop)
     for k in ("control_hz", "deadline_adherence_pct", "cycle_jitter_ms", "sense_ms",
