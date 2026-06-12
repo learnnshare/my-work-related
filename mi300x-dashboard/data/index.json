@@ -1,15 +1,15 @@
 {
   "records": [
-    "gemm|bf16|1|1",
-    "ppo_infer|bf16|1|1"
+    "gemm|fp16|2048|1",
+    "gemm|fp16|4096|1",
+    "gemm|fp16|8192|1",
+    "gemm|bf16|2048|1",
+    "gemm|bf16|4096|1",
+    "gemm|bf16|8192|1"
   ],
-  "predictions": [
-    "ppo_infer",
-    "gemm"
-  ],
+  "predictions": [],
   "sources": [
-    "device",
-    "gem5"
+    "device"
   ],
-  "count": 4
+  "count": 6
 }

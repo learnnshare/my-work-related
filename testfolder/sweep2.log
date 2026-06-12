@@ -1,0 +1,175 @@
+  $ hipcc /workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp -o /workspace/shared/my-work-related/mi300x-pipeline/bench/gemm -lrocblas -I/opt/rocm/include -L/opt/rocm/lib
+/workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp:78:5: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+   78 |     hipFree(A); hipFree(B); hipFree(C);
+      |     ^~~~~~~ ~
+/workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp:78:17: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+   78 |     hipFree(A); hipFree(B); hipFree(C);
+      |                 ^~~~~~~ ~
+/workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp:78:29: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+   78 |     hipFree(A); hipFree(B); hipFree(C);
+      |                             ^~~~~~~ ~
+3 warnings generated when compiling for gfx942.
+/workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp:78:5: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+   78 |     hipFree(A); hipFree(B); hipFree(C);
+      |     ^~~~~~~ ~
+/workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp:78:17: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+   78 |     hipFree(A); hipFree(B); hipFree(C);
+      |                 ^~~~~~~ ~
+/workspace/shared/my-work-related/mi300x-pipeline/bench/gemm.cpp:78:29: warning: ignoring return value of function declared with 'nodiscard' attribute [-Wunused-result]
+   78 |     hipFree(A); hipFree(B); hipFree(C);
+      |                             ^~~~~~~ ~
+3 warnings generated when compiling for host.
+
+=== sweep: gemm fp16 2048^3 ===
+  kernel-trace rc=0
+  → pmc group 1/5: ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ...
+  pmc group ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ok
+  → pmc group 2/5: ['TCC_HIT_sum', 'TCC_MISS_sum'] ...
+  pmc group ['TCC_HIT_sum', 'TCC_MISS_sum'] ok
+  → pmc group 3/5: ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ...
+  pmc group ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ok
+  → pmc group 4/5: ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ...
+  pmc group ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ok
+  → pmc group 5/5: ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ...
+  pmc group ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ok
+  [counters collected for Cijk_Ailk_Bljk_HHS_BH_MT128x128x64_MI16x]:
+     GRBM_COUNT = 14194544.0
+     GRBM_GUI_ACTIVE = 14194544.0
+     SQ_INSTS_VALU = 64425984.0
+     SQ_INSTS_VALU_MFMA_MOPS_BF16 = 0.0
+     SQ_INSTS_VALU_MFMA_MOPS_F16 = 704643072.0
+     SQ_WAVES = 21504.0
+     TCC_HIT_sum = 32086760.0
+     TCC_MISS_sum = 15456672.0
+  [bandwidth basis: TCC_MISS×64 (proxy) -> 1.446 TB/s]
+  -> Cijk_Ailk_Bljk_HHS_BH_MT12  527.395 TFLOPS  mfma=40.3%  bound=compute
+
+=== sweep: gemm fp16 4096^3 ===
+  kernel-trace rc=0
+  → pmc group 1/5: ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ...
+  pmc group ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ok
+  → pmc group 2/5: ['TCC_HIT_sum', 'TCC_MISS_sum'] ...
+  pmc group ['TCC_HIT_sum', 'TCC_MISS_sum'] ok
+  → pmc group 3/5: ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ...
+  pmc group ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ok
+  → pmc group 4/5: ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ...
+  pmc group ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ok
+  → pmc group 5/5: ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ...
+  pmc group ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ok
+  [counters collected for Cijk_Ailk_Bljk_HHS_BH_MT256x112x64_MI16x]:
+     GRBM_COUNT = 60728716.0
+     GRBM_GUI_ACTIVE = 60728716.0
+     SQ_INSTS_VALU = 486928512.0
+     SQ_INSTS_VALU_MFMA_MOPS_BF16 = 0.0
+     SQ_INSTS_VALU_MFMA_MOPS_F16 = 5703204864.0
+     SQ_WAVES = 49728.0
+     TCC_HIT_sum = 199515541.0
+     TCC_MISS_sum = 104491578.0
+  [bandwidth basis: TCC_MISS×64 (proxy) -> 1.606 TB/s]
+  -> Cijk_Ailk_Bljk_HHS_BH_MT25  693.181 TFLOPS  mfma=53.0%  bound=compute
+
+=== sweep: gemm fp16 8192^3 ===
+  kernel-trace rc=0
+  → pmc group 1/5: ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ...
+  pmc group ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ok
+  → pmc group 2/5: ['TCC_HIT_sum', 'TCC_MISS_sum'] ...
+  pmc group ['TCC_HIT_sum', 'TCC_MISS_sum'] ok
+  → pmc group 3/5: ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ...
+  pmc group ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ok
+  → pmc group 4/5: ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ...
+  pmc group ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ok
+  → pmc group 5/5: ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ...
+  pmc group ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ok
+  [counters collected for Cijk_Ailk_Bljk_HHS_BH_MT256x224x64_MI16x]:
+     GRBM_COUNT = 381399939.0
+     GRBM_GUI_ACTIVE = 381399939.0
+     SQ_INSTS_VALU = 3365346432.0
+     SQ_INSTS_VALU_MFMA_MOPS_BF16 = 0.0
+     SQ_INSTS_VALU_MFMA_MOPS_F16 = 45625638912.0
+     SQ_WAVES = 99456.0
+     TCC_HIT_sum = 1106195728.0
+     TCC_MISS_sum = 458456440.0
+  [bandwidth basis: TCC_MISS×64 (proxy) -> 1.082 TB/s]
+  -> Cijk_Ailk_Bljk_HHS_BH_MT25  851.419 TFLOPS  mfma=65.1%  bound=compute
+
+=== sweep: gemm bf16 2048^3 ===
+  kernel-trace rc=0
+  → pmc group 1/5: ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ...
+  pmc group ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ok
+  → pmc group 2/5: ['TCC_HIT_sum', 'TCC_MISS_sum'] ...
+  pmc group ['TCC_HIT_sum', 'TCC_MISS_sum'] ok
+  → pmc group 3/5: ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ...
+  pmc group ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ok
+  → pmc group 4/5: ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ...
+  pmc group ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ok
+  → pmc group 5/5: ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ...
+  pmc group ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ok
+  [counters collected for Cijk_Ailk_Bljk_BBS_BH_MT128x128x64_MI16x]:
+     GRBM_COUNT = 12084470.0
+     GRBM_GUI_ACTIVE = 12084470.0
+     SQ_INSTS_VALU = 69307392.0
+     SQ_INSTS_VALU_MFMA_MOPS_BF16 = 704643072.0
+     SQ_INSTS_VALU_MFMA_MOPS_F16 = 0.0
+     SQ_WAVES = 21504.0
+     TCC_HIT_sum = 32201478.0
+     TCC_MISS_sum = 15459192.0
+  [bandwidth basis: TCC_MISS×64 (proxy) -> 1.448 TB/s]
+  -> Cijk_Ailk_Bljk_BBS_BH_MT12  527.891 TFLOPS  mfma=40.4%  bound=compute
+
+=== sweep: gemm bf16 4096^3 ===
+  kernel-trace rc=0
+  → pmc group 1/5: ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ...
+  pmc group ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ok
+  → pmc group 2/5: ['TCC_HIT_sum', 'TCC_MISS_sum'] ...
+  pmc group ['TCC_HIT_sum', 'TCC_MISS_sum'] ok
+  → pmc group 3/5: ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ...
+  pmc group ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ok
+  → pmc group 4/5: ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ...
+  pmc group ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ok
+  → pmc group 5/5: ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ...
+  pmc group ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ok
+  [counters collected for Cijk_Ailk_Bljk_BBS_BH_MT256x112x64_MI16x]:
+     GRBM_COUNT = 61012070.0
+     GRBM_GUI_ACTIVE = 61012070.0
+     SQ_INSTS_VALU = 506650368.0
+     SQ_INSTS_VALU_MFMA_MOPS_BF16 = 5703204864.0
+     SQ_INSTS_VALU_MFMA_MOPS_F16 = 0.0
+     SQ_WAVES = 49728.0
+     TCC_HIT_sum = 198315353.0
+     TCC_MISS_sum = 105834132.0
+  [bandwidth basis: TCC_MISS×64 (proxy) -> 1.714 TB/s]
+  -> Cijk_Ailk_Bljk_BBS_BH_MT25  730.42 TFLOPS  mfma=55.9%  bound=compute
+
+=== sweep: gemm bf16 8192^3 ===
+  kernel-trace rc=0
+  → pmc group 1/5: ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ...
+  pmc group ['SQ_WAVES', 'GRBM_COUNT', 'GRBM_GUI_ACTIVE'] ok
+  → pmc group 2/5: ['TCC_HIT_sum', 'TCC_MISS_sum'] ...
+  pmc group ['TCC_HIT_sum', 'TCC_MISS_sum'] ok
+  → pmc group 3/5: ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ...
+  pmc group ['TCC_EA_RDREQ_sum', 'TCC_EA_WRREQ_sum'] ok
+  → pmc group 4/5: ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ...
+  pmc group ['SQ_INSTS_VALU', 'SQ_INSTS_VALU_MFMA_MOPS_F16'] ok
+  → pmc group 5/5: ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ...
+  pmc group ['SQ_INSTS_VALU_MFMA_MOPS_BF16'] ok
+  [counters collected for Cijk_Ailk_Bljk_BBS_BH_MT256x224x64_MI16x]:
+     GRBM_COUNT = 375067880.0
+     GRBM_GUI_ACTIVE = 375067880.0
+     SQ_INSTS_VALU = 3443626368.0
+     SQ_INSTS_VALU_MFMA_MOPS_BF16 = 45625638912.0
+     SQ_INSTS_VALU_MFMA_MOPS_F16 = 0.0
+     SQ_WAVES = 99456.0
+     TCC_HIT_sum = 1141598669.0
+     TCC_MISS_sum = 423364403.0
+  [bandwidth basis: TCC_MISS×64 (proxy) -> 1.030 TB/s]
+  -> Cijk_Ailk_Bljk_BBS_BH_MT25  877.61 TFLOPS  mfma=67.1%  bound=compute
+
+[sweep] published 6 record(s) -> /workspace/shared/my-work-related/mi300x-dashboard/data/bundle.js
+
+[sweep] summary (real MI300X):
+  GEMM fp16 2048^3     527.395 TFLOPS  bw=1.4461 TB/s  L2hit=67.5%  compute
+  GEMM fp16 4096^3     693.181 TFLOPS  bw=1.6061 TB/s  L2hit=65.6%  compute
+  GEMM fp16 8192^3     851.419 TFLOPS  bw=1.0819 TB/s  L2hit=70.7%  compute
+  GEMM bf16 2048^3     527.891 TFLOPS  bw=1.4477 TB/s  L2hit=67.6%  compute
+  GEMM bf16 4096^3      730.42 TFLOPS  bw=1.7142 TB/s  L2hit=65.2%  compute
+  GEMM bf16 8192^3      877.61 TFLOPS  bw=1.0299 TB/s  L2hit=72.9%  compute
