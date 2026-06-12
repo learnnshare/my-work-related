@@ -2,13 +2,17 @@
 
 | workload | precision | size | TFLOPS | bandwidth_TBs | MFMA_pct | L2_hit_pct | bound_by | e2e_ms | source |
 |---|---|---|---|---|---|---|---|---|---|
-| GEMM bf16 2048^3 | bf16 | 2048 | 527.891 | 1.4477 | 40.4 | 67.6 | compute | 0.6834 | device |
-| GEMM bf16 4096^3 | bf16 | 4096 | 730.42 | 1.7142 | 55.9 | 65.2 | compute | 3.9515 | device |
-| GEMM bf16 8192^3 | bf16 | 8192 | 877.61 | 1.0299 | 67.1 | 72.9 | compute | 26.3098 | device |
-| GEMM fp16 2048^3 | fp16 | 2048 | 527.395 | 1.4461 | 40.3 | 67.5 | compute | 0.6841 | device |
-| GEMM fp16 4096^3 | fp16 | 4096 | 693.181 | 1.6061 | 53.0 | 65.6 | compute | 4.1637 | device |
-| GEMM fp16 8192^3 | fp16 | 8192 | 851.419 | 1.0819 | 65.1 | 70.7 | compute | 27.1191 | device |
+| GEMM bf16 2048^3 | bf16 | 2048 | 527.148 | 1.4456 | 40.3 | 67.6 | compute | 0.6844 | device |
+| GEMM bf16 4096^3 | bf16 | 4096 | 733.068 | 1.7044 | 56.1 | 65.5 | compute | 3.9372 | device |
+| GEMM bf16 8192^3 | bf16 | 8192 | 873.582 | 1.0489 | 66.8 | 72.3 | compute | 26.4311 | device |
+| GEMM fp16 2048^3 | fp16 | 2048 | 523.255 | 1.4347 | 40.0 | 67.5 | compute | 0.6895 | device |
+| GEMM fp16 4096^3 | fp16 | 4096 | 690.939 | 1.6011 | 52.8 | 65.6 | compute | 4.1772 | device |
+| GEMM fp16 8192^3 | fp16 | 8192 | 852.056 | 1.1669 | 65.2 | 68.4 | compute | 27.0989 | device |
+| GEMM fp8 2048^3 | fp8 | 2048 | 1044.814 | 1.0241 | 40.0 | 78.4 | compute | 0.3453 | device |
+| GEMM fp8 4096^3 | fp8 | 4096 | 1286.068 | 1.6339 | 49.2 | 47.4 | compute | 2.2442 | device |
+| GEMM fp8 8192^3 | fp8 | 8192 | 1579.615 | 0.7964 | 60.4 | 77.4 | compute | 14.6173 | device |
 | PPO Policy Inference (batch-1 robot control) | bf16 | None | 0.3 | 0.64 | 0.0 | 70.0 | memory | 0.05 | gem5 |
 | gemm (Cijk_Ailk_Bljk_HHS_BH_MT256x112x) | fp16 | None | 730.799 | 1.5943 | 55.9 | 67.6 | compute | 9.5914 | device |
+| gemm_fp8 (Cijk_Alik_Bljk_F8NHS_BH_Bias_HA_) | fp8 | None | 1254.271 | 1.5998 | 48.0 | 47.2 | compute | 5.5884 | device |
 | rocBLAS GEMM (8192³) | bf16 | None | 650.6 | 0.71 | 49.8 | 90.0 | compute | 1.7125 | gem5 |
 | vectoradd (vadd(float const*, float const*, float*, int)) | fp16 | None | 41.07 | 1.9258 | 0.0 | 25.6 | memory | 0.6536 | device |
