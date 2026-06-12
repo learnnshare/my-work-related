@@ -1,0 +1,7 @@
+Requirement already satisfied: pyyaml>=6.0 in /usr/local/lib/python3.12/dist-packages (from -r requirements.txt (line 3)) (6.0.3)
+Requirement already satisfied: scikit-learn>=1.2 in /usr/local/lib/python3.12/dist-packages (from -r requirements.txt (line 6)) (1.9.0)
+Requirement already satisfied: numpy>=1.23 in /usr/local/lib/python3.12/dist-packages (from -r requirements.txt (line 7)) (2.2.6)
+Requirement already satisfied: scipy>=1.10.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.2->-r requirements.txt (line 6)) (1.16.2)
+Requirement already satisfied: joblib>=1.4.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.2->-r requirements.txt (line 6)) (1.5.3)
+Requirement already satisfied: narwhals>=2.0.1 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.2->-r requirements.txt (line 6)) (2.22.1)
+Requirement already satisfied: threadpoolctl>=3.5.0 in /usr/local/lib/python3.12/dist-packages (from scikit-learn>=1.2->-r requirements.txt (line 6)) (3.6.0)

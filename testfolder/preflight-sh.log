@@ -1,0 +1,39 @@
+
+────────────────────────────────────────────────────────
+ Preflight — jupyter-hack-team-1379-260612170202-9399912a 
+────────────────────────────────────────────────────────
+  env: Linux 6.8.0-124-generic
+==> Core
+  ✓ python3 — /usr/bin/python3
+  ✓ pip3 — /usr/local/bin/pip3
+  ✓ git — /usr/bin/git
+  ✓ ssh — /usr/bin/ssh
+  ! rsync missing
+==> ROCm / profiling (cloud MI300X only)
+  ✓ rocminfo — /opt/rocm/bin/rocminfo
+  ✓ amd-smi — /opt/rocm/bin/amd-smi
+  ✓ rocm-smi — /opt/rocm/bin/rocm-smi
+  ✓ rocprofv3 — /opt/rocm/bin/rocprofv3
+  ✓ rocprof — /opt/rocm/bin/rocprof
+==> gem5 / containers (optional)
+  ! docker missing
+  ! scons missing
+  ! gem5.opt not built
+==> Python deps
+  ✓ yaml
+  ✓ sklearn
+  ✓ numpy
+  ✓ torch 2.10.0+cu128 (GPU: False)
+==> Pipeline self-check (env.summarize)
+{
+  "root": true,
+  "groups_render_video": false,
+  "amd_smi": true,
+  "rocm_smi": true,
+  "rocprofv3": true,
+  "ftrace_writable": false,
+  "proc_interrupts": true,
+  "perf_event_paranoid": 4
+}
+
+  ✓ preflight done
