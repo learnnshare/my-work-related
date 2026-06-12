@@ -35,8 +35,19 @@ import workloads as WL                         # noqa: E402
 # bytes per TCC EA request (cache-line granularity on gfx942)
 EA_BYTES = 64
 
-# per-workload flop model (flops per grid thread) for achievedTflops
-FLOP_MODEL = {"vectoradd": 128}   # vadd: 64 inner iters * (mul+add)
+# Workload profiles: how to build each bench and how to count its FLOPs.
+#   flops = ("per_thread", f)    -> f * total grid threads        (e.g. vadd)
+#           ("per_dispatch", f)  -> f * number of kernel launches (e.g. GEMM)
+GEMM_MNK = 4096
+WORKLOAD_PROFILES = {
+    "vectoradd": {"src": "vectoradd.cpp", "libs": [],
+                  "flops": ("per_thread", 128), "prec": "fp16",
+                  "unit": "kernels", "short": "kernels", "kernel": "vadd"},
+    "gemm": {"src": "gemm.cpp",
+             "libs": ["-lrocblas", "-I/opt/rocm/include", "-L/opt/rocm/lib"],
+             "flops": ("per_dispatch", 2 * GEMM_MNK ** 3), "prec": "fp16",
+             "unit": "GEMMs", "short": "gemm", "kernel": None},
+}
 
 # Independent counter groups — each is its own rocprofv3 pass, so a group the VF
 # rejects doesn't kill the others. These three are CONFIRMED working on the
@@ -56,14 +67,15 @@ def sh(cmd, **kw):
     return subprocess.run(cmd, **kw)
 
 
-def ensure_binary(name="vectoradd"):
-    binp = HERE / "bench" / name
-    src = HERE / "bench" / "vectoradd.cpp"
+def ensure_binary(workload):
+    prof = WORKLOAD_PROFILES[workload]
+    binp = HERE / "bench" / workload
+    src = HERE / "bench" / prof["src"]
     if binp.exists():
         return binp
     if not shutil.which("hipcc"):
         sys.exit("hipcc not found — can't build the workload (run on the MI300X box)")
-    sh(["hipcc", str(src), "-o", str(binp)], check=True)
+    sh(["hipcc", str(src), "-o", str(binp), *prof["libs"]], check=True)
     return binp
 
 
@@ -128,9 +140,10 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     for cn in sorted(c):
         print(f"     {cn} = {c[cn]}")
 
+    prof = WORKLOAD_PROFILES.get(workload_id, {})
     cu = agent.get("cu_count") or 304
     clk = agent.get("max_clk_mhz") or 2100
-    peakT = WL.PEAK_TFLOPS.get(WL.WORKLOADS.get(workload_id, {}).get("pref", "fp16"), 1307.4)
+    peakT = WL.PEAK_TFLOPS.get(prof.get("prec", "fp16"), 1307.4)
     peak_bw = 5.3
 
     grbm_total = c.get("GRBM_COUNT")
@@ -153,8 +166,14 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
         total_bytes = None
     achieved_bw = (total_bytes / kernel_time_s / 1e12) if (total_bytes and kernel_time_s) else None
 
-    fpt = FLOP_MODEL.get(workload_id)
-    flops = (fpt * grid_total) if (fpt and grid_total) else None
+    flops = None
+    fl = prof.get("flops")
+    if fl:
+        mode, val = fl
+        if mode == "per_thread" and grid_total:
+            flops = val * grid_total
+        elif mode == "per_dispatch":
+            flops = val * len(kdisp)
     achieved_tf = (flops / kernel_time_s / 1e12) if (flops and kernel_time_s) else None
 
     hit = c.get("TCC_HIT_sum")
@@ -193,7 +212,7 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     put("active_streams", 1, "measured")
     # L4
     put("gemm_tflops", round(achieved_tf, 2) if achieved_tf else None, "measured")
-    put("library", "HIP kernel", "measured")
+    put("library", "rocBLAS" if workload_id == "gemm" else "HIP kernel", "measured")
     put("kernel_cache_hit_pct", round(cache_hit, 1) if cache_hit is not None else None, "measured")
     put("rccl_gbs", None, "null")
     put("autotune_variant", None, "null")
@@ -208,7 +227,7 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     put("latency_p50", round(e2e_ms, 4) if e2e_ms else None, "measured")
     put("latency_p99", None, "null")
     put("throughput", round(len(kdisp) / kernel_time_s, 2) if kernel_time_s else None, "measured")
-    put("throughput_unit", "kernels/s", "measured")
+    put("throughput_unit", prof.get("short", "kernels") + "/s", "measured")
     put("batch", 1, "measured")
     put("num_gpus", 1, "measured")
     bound = None
@@ -243,11 +262,16 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workload", default="vectoradd")
+    ap.add_argument("--workload", default="vectoradd", choices=list(WORKLOAD_PROFILES),
+                    help="vectoradd (memory-bound) or gemm (compute-bound, MFMA)")
     ap.add_argument("--kernel", default=None, help="substring of the kernel of interest")
     ap.add_argument("--fixtures", action="store_true", help="use bundled CSVs (no GPU)")
     ap.add_argument("--dashboard", default="../mi300x-dashboard/data")
+    ap.add_argument("--keep", action="store_true",
+                    help="merge into existing dashboard bundle instead of replacing it")
     args = ap.parse_args()
+    prof = WORKLOAD_PROFILES[args.workload]
+    kernel_hint = args.kernel or prof.get("kernel")
 
     # line-buffer stdout so progress shows live even when piped to tee
     try:
@@ -275,10 +299,11 @@ def main():
     if not traces and not counters:
         sys.exit("no rocprofv3 output parsed — check the run on the box")
 
-    name, scalars, fidelity, run_config = derive(traces, counters, agent, args.workload, args.kernel)
-    wl = {"id": args.workload, "name": f"{args.workload} ({name})", "unit": "kernels",
-          "short": "kernels", "pref": "fp16", "batch": 1, "num_gpus": 1,
-          "precision": "fp16", "peakTflops": run_config["peakTflops"]}
+    name, scalars, fidelity, run_config = derive(traces, counters, agent, args.workload, kernel_hint)
+    wl = {"id": args.workload, "name": f"{args.workload} ({name[:32]})",
+          "unit": prof.get("unit", "kernels"), "short": prof.get("short", "kernels"),
+          "pref": prof.get("prec", "fp16"), "batch": 1, "num_gpus": 1,
+          "precision": prof.get("prec", "fp16"), "peakTflops": run_config["peakTflops"]}
 
     from core.interface import CollectorResult, Cadence
     res = CollectorResult(layer_id=-1, cadence=Cadence.PERKERNEL)
@@ -299,11 +324,23 @@ def main():
     print("  L4:", {x['k']: x['v'] for x in record["layers"][4]["metrics"]})
 
     dash = (HERE / args.dashboard).resolve()
-    to_dashboard.publish(dash, records=[record],
+    records = [record]
+    if args.keep:
+        # merge previously-captured records so multiple workloads coexist
+        import json
+        for f in sorted((dash / "records").glob("*.json")):
+            try:
+                prev = json.loads(f.read_text())
+                if prev["meta"]["run_id"] != run_id:
+                    records.append(prev)
+            except Exception:
+                pass
+        print(f"[capture] --keep: merging {len(records)} records into the bundle")
+    to_dashboard.publish(dash, records=records,
                          device_status={"mode": "live", "source": "rocprofv3 (SR-IOV VF)",
                                         "driver": "ROCm 7.0 · amdgpu 6.16", "gpus": 1,
                                         "sampling": "per-kernel", "status": "captured"})
-    print(f"\n[capture] published real record → {dash}/bundle.js")
+    print(f"\n[capture] published {len(records)} record(s) → {dash}/bundle.js")
     print("[capture] open the dashboard developer view to see L0–L7 from your MI300X.")
 
 
