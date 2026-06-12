@@ -232,7 +232,9 @@ def derive(traces, counters, agent, workload_id, kernel_hint, prec=None, flops_p
     put("active_streams", 1, "measured")
     # L4
     put("gemm_tflops", round(achieved_tf, 2) if achieved_tf else None, "measured")
-    put("library", "rocBLAS" if workload_id == "gemm" else "HIP kernel", "measured")
+    lib = ("hipBLASLt" if (prec == "fp8" or workload_id == "gemm_fp8")
+           else "rocBLAS" if workload_id == "gemm" else "HIP kernel")
+    put("library", lib, "measured")
     put("kernel_cache_hit_pct", round(cache_hit, 1) if cache_hit is not None else None, "measured")
     put("rccl_gbs", None, "null")
     put("autotune_variant", None, "null")
