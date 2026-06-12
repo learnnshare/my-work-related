@@ -48,6 +48,10 @@ WORKLOAD_PROFILES = {
              "libs": ["-lrocblas", "-I/opt/rocm/include", "-L/opt/rocm/lib"],
              "flops": ("per_dispatch", 2 * GEMM_MNK ** 3), "prec": "fp16",
              "unit": "GEMMs", "short": "gemm", "kernel": None},
+    "gemm_fp8": {"src": "gemm_fp8.cpp",
+                 "libs": ["-lhipblaslt", "-I/opt/rocm/include", "-L/opt/rocm/lib"],
+                 "flops": ("per_dispatch", 2 * GEMM_MNK ** 3), "prec": "fp8",
+                 "unit": "GEMMs", "short": "gemm", "kernel": None},
 }
 
 # Independent counter groups — each is its own rocprofv3 pass, so a group the VF
@@ -61,6 +65,7 @@ PMC_GROUPS = [
     ["TCC_EA_RDREQ_sum", "TCC_EA_WRREQ_sum"],               # memory requests (×64B) if exposed
     ["SQ_INSTS_VALU", "SQ_INSTS_VALU_MFMA_MOPS_F16"],       # VALU + fp16 MFMA (confirmed on VF)
     ["SQ_INSTS_VALU_MFMA_MOPS_BF16"],                        # bf16 MFMA (separate counter)
+    ["SQ_INSTS_VALU_MFMA_MOPS_F8"],                          # fp8 MFMA (skipped if name differs)
 ]
 
 
@@ -317,14 +322,18 @@ def _merge_prior(records, dash):
 def run_sweep(args, ts, ts_iso, dash):
     sizes = [int(x) for x in args.sizes.split(",") if x.strip()]
     precs = [p.strip() for p in args.precisions.split(",") if p.strip()]
-    app = ensure_binary("gemm")
     base = ts.strftime("%Y%m%dT%H%M%SZ") + "_sweep"
     records = []
     for prec in precs:
+        is_fp8 = prec == "fp8"
+        app = ensure_binary("gemm_fp8" if is_fp8 else "gemm")   # fp8 -> hipBLASLt bench
         for size in sizes:
             print(f"\n=== sweep: gemm {prec} {size}^3 ===")
             sraw = HERE / "runs" / base / f"gemm_{prec}_{size}" / "raw"
-            app_cmd = [str(app), str(size), str(size), str(size), prec, str(args.iters)]
+            if is_fp8:
+                app_cmd = [str(app), str(size), str(size), str(size), str(args.iters)]
+            else:
+                app_cmd = [str(app), str(size), str(size), str(size), prec, str(args.iters)]
             traces, counters, agent = capture(app_cmd, sraw)
             if not traces and not counters:
                 print("  skip (no kernels — precision/size unsupported on this box?)")
