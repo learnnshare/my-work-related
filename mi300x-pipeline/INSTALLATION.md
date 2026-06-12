@@ -135,6 +135,39 @@ python orchestrator.py --config pipeline.device.yaml    # mode: device
 rsync -av mi300x:~/mi300x-pipeline/runs/ ./runs/
 ```
 
+## 5b. Persisting packages across the 4-hour reset (ephemeral box)
+
+If only `/workspace/shared` survives resets, install packages **there** instead
+of the system `dist-packages` (which is wiped). Resume-proof approach:
+
+```bash
+cd /workspace/shared/my-work-related/mi300x-pipeline
+bash scripts/setup_persistent_env.sh              # core deps → /workspace/shared/mi300x-env
+bash scripts/setup_persistent_env.sh --with-torch # also persist ROCm torch (several GB)
+# now AND on every resume:
+source /workspace/shared/mi300x-env/activate.sh
+```
+It uses `pip install --target=/workspace/shared/mi300x-env/site-packages` and an
+`activate.sh` that puts that dir on `PYTHONPATH` (searched before system
+packages, so a ROCm torch there shadows the image's CUDA build). On each resume,
+just `source .../activate.sh` — no reinstall.
+
+> Watch space: the shared mount on the hack box is ~28 GB; ROCm torch alone is
+> several GB. Skip `--with-torch` if you're tight and reinstall torch each session.
+
+```mermaid
+flowchart LR
+    subgraph EPHEMERAL["base image (wiped every 4h)"]
+        SYS["/usr/local/.../dist-packages<br/>(lost on reset)"]
+    end
+    subgraph SHARED["/workspace/shared (persists)"]
+        PKG["mi300x-env/site-packages<br/>pyyaml · sklearn · torch-ROCm"]
+        ACT["activate.sh → PYTHONPATH"]
+    end
+    R["resume box"] --> ACT --> PY["python3 finds shared pkgs first"]
+    PKG --- PY
+```
+
 ## 6. gem5 (optional)
 
 ```bash
