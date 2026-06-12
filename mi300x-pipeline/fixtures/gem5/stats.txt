@@ -1,0 +1,19 @@
+
+---------- Begin Simulation Statistics ----------
+simSeconds                                   0.001690                       # Number of seconds simulated
+simTicks                                  1690000000                       # Number of ticks simulated
+system.cpu.numCycles                         3549000                       # number of cpu cycles simulated
+system.gpu.numCycles                         3549000                       # gpu cycles
+system.gpu.numKernelsLaunched                      1                       # kernels dispatched
+system.gpu.CUs00.numALUInsts                 41250000                       # ALU instructions
+system.gpu.CUs00.numVecOpsExecuted          660000000                      # vector ops
+system.gpu.CUs00.vectorRegsReads            120000000                      # VGPR reads
+system.mem_ctrls0.bytesRead::total          800000000                      # bytes read from HBM
+system.mem_ctrls0.bytesWritten::total       400000000                      # bytes written to HBM
+system.mem_ctrls0.readReqs                    12500000                      # read requests
+system.ruby.L1Cache.m_demand_hits             9000000                      # L1D demand hits
+system.ruby.L1Cache.m_demand_misses          1000000                       # L1D demand misses
+system.ruby.L2Cache.m_demand_hits             4500000                      # TCC hits
+system.ruby.L2Cache.m_demand_misses           500000                       # TCC misses
+system.gpu.dispatchLatency                          6                      # dispatch latency cycles
+---------- End Simulation Statistics ----------

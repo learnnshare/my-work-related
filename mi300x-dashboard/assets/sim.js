@@ -262,6 +262,20 @@ function buildLayers(s) {
         { k: 'Bound by', v: s.boundBy + (s.wl.cpuBound > 0.4 ? ' + CPU' : ''), fmt: 'text' },
       ],
     },
+    {
+      id: 7, name: 'L7 · Task / Control Loop',
+      sub: 'Physical AI · real-time control',
+      metrics: [
+        { k: 'Control rate achieved', v: Math.round(1000 / s.e2eMs), unit: 'Hz' },
+        { k: 'Deadline adherence', v: +clamp(100 - s.wl.cpuBound * 12, 80, 100).toFixed(1), unit: '%', max: 100 },
+        { k: 'Cycle jitter', v: +(s.e2eMs * 0.35).toFixed(3), unit: 'ms' },
+        { k: 'Sense', v: 0.8, unit: 'ms' },
+        { k: 'Infer (policy)', v: +s.e2eMs.toFixed(3), unit: 'ms' },
+        { k: 'Act', v: 0.5, unit: 'ms' },
+        { k: 'Episode reward', v: Math.round(380 + jitter(s.tick, 40)), fmt: 'big' },
+        { k: 'Sim→real error', v: +(8 + s.wl.cpuBound * 14).toFixed(1), unit: '%', max: 100 },
+      ],
+    },
   ];
 }
 

@@ -1,0 +1,18 @@
+{
+  "_comment": "Recorded MI300X device scalars for rocBLAS GEMM 8192^3 bf16 (illustrative ground truth).",
+  "active_cus": 298, "clock_mhz": 2090, "mfma_util_pct": 64.0, "hbm_util_pct": 19.0,
+  "vgpr_occ_pct": 71.0, "power_w": 612, "temp_c": 71,
+  "compute_partition": "SPX", "memory_partition": "NPS1", "active_xcds": 8,
+  "smu_state": "performance", "ecc_corrected": 0, "firmware": "amdgpu 6.7 (real)",
+  "kfd_dispatch_us": 2.0, "hw_queue_depth": 9, "dma_gbs": 41.0, "page_faults_s": 12, "irqs_s": 8400,
+  "launch_latency_us": 5.8, "dispatch_rate_k": 0.9, "hsa_queue_occ_pct": 68.0, "signal_wait_us": 1.1, "active_streams": 2,
+  "gemm_tflops": 712.0, "library": "hipBLASLt", "kernel_cache_hit_pct": 88.0, "rccl_gbs": 0, "autotune_variant": "MFMA 32x32",
+  "gpu_compute_ms": 1.02, "host_overhead_pct": 7.0, "vram_gb": 1.6, "hip_graph": "off", "launch_overhead_pct": 1.5,
+  "e2e_ms": 1.08, "latency_p50": 1.08, "latency_p99": 1.31, "throughput": 925.0,
+  "batch": 1, "num_gpus": 1, "bound_by": "compute",
+  "control_hz": 925, "deadline_adherence_pct": 100.0, "cycle_jitter_ms": 0.23,
+  "sense_ms": 0.0, "infer_ms": 1.08, "act_ms": 0.0, "episode_reward": null, "sim2real_err_pct": null,
+  "achieved_tflops": 712.0, "achieved_bw_tbs": 1.02, "compute_util": 0.54, "mem_util": 0.19,
+  "busy": 0.54, "arith_intensity": 916.0, "peak_tflops": 1307.4, "peak_bw_tbs": 5.3,
+  "mem_total_gb": 192, "scale_eff": 1.0, "throughput_unit": "gemm/s"
+}

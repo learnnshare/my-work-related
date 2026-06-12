@@ -1,0 +1,18 @@
+{
+  "_comment": "Recorded MI300X device scalars for batch-1 PPO policy inference (illustrative ground truth).",
+  "active_cus": 28, "clock_mhz": 2095, "mfma_util_pct": 6.0, "hbm_util_pct": 41.0,
+  "vgpr_occ_pct": 38.0, "power_w": 468, "temp_c": 58,
+  "compute_partition": "SPX", "memory_partition": "NPS1", "active_xcds": 8,
+  "smu_state": "performance", "ecc_corrected": 0, "firmware": "amdgpu 6.7 (real)",
+  "kfd_dispatch_us": 2.2, "hw_queue_depth": 3, "dma_gbs": 26.0, "page_faults_s": 40, "irqs_s": 2100,
+  "launch_latency_us": 4.6, "dispatch_rate_k": 118.0, "hsa_queue_occ_pct": 22.0, "signal_wait_us": 2.4, "active_streams": 1,
+  "gemm_tflops": 0.8, "library": "rocBLAS", "kernel_cache_hit_pct": 74.0, "rccl_gbs": 0, "autotune_variant": "split-K",
+  "gpu_compute_ms": 0.012, "host_overhead_pct": 34.0, "vram_gb": 0.4, "hip_graph": "off", "launch_overhead_pct": 41.0,
+  "e2e_ms": 0.051, "latency_p50": 0.051, "latency_p99": 0.069, "throughput": 19600.0,
+  "batch": 1, "num_gpus": 1, "bound_by": "memory",
+  "control_hz": 196, "deadline_adherence_pct": 99.2, "cycle_jitter_ms": 0.34,
+  "sense_ms": 0.8, "infer_ms": 0.051, "act_ms": 0.5, "episode_reward": 412.0, "sim2real_err_pct": null,
+  "achieved_tflops": 0.8, "achieved_bw_tbs": 2.28, "compute_util": 0.0006, "mem_util": 0.43,
+  "busy": 0.43, "arith_intensity": 7.5, "peak_tflops": 1307.4, "peak_bw_tbs": 5.3,
+  "mem_total_gb": 192, "scale_eff": 1.0, "throughput_unit": "inf/s", "target_hz": 200
+}

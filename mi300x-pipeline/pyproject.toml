@@ -1,0 +1,16 @@
+[project]
+name = "mi300x-pipeline"
+version = "0.1.0"
+description = "Modular full-stack (L0-L7) metrics capture for AMD MI300X and gem5, normalized into the MI300X dashboard contract, with predictive-engine hooks."
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+predict = ["scikit-learn>=1.2", "numpy>=1.23"]
+
+[project.scripts]
+mi300x-pipeline = "orchestrator:main"
+
+# Run: python orchestrator.py --config pipeline.yaml
+# The baseline predictor uses scikit-learn when available and falls back to a
+# stdlib calibrated-ratio model otherwise, so the demo runs with pyyaml alone.

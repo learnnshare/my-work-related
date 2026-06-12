@@ -1,0 +1,12 @@
+{
+  "system": {
+    "clk_domain": { "clock": 2100 },
+    "gpu": {
+      "isa": "gfx942",
+      "num_compute_units": 304,
+      "num_simds": 4,
+      "wf_size": 64
+    },
+    "cpu": { "type": "X86KvmCPU" }
+  }
+}

@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# pipeline run artifacts (raw captures, manifests) — regenerable
+mi300x-pipeline/runs/
+
+# Note: mi300x-dashboard/data/ (bundle.js + records + predictions) IS committed
+# as the demo dataset so the dashboard shows real data out of the box. Regenerate
+# with: python3 mi300x-pipeline/orchestrator.py --config mi300x-pipeline/pipeline.yaml

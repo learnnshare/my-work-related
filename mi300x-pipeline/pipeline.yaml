@@ -1,0 +1,60 @@
+# MI300X / gem5 metrics pipeline — runnable demo config.
+# mode: demo runs BOTH gem5 (features) and device (labels) from the bundled
+# fixtures, trains the baseline predictor, and publishes a bundle.js the
+# dashboard loads. Switch mode to gem5 or device on the real boxes.
+
+mode: demo                       # demo | gem5 | device
+
+workloads: [gemm, ppo_infer]
+
+configs:
+  - { precision: bf16, batch: 1, numGPUs: 1 }
+
+sampling:
+  timeseries_interval_ms: 100
+  perkernel: true
+
+# ---- gem5 source ----
+gem5:
+  binary: /opt/gem5/build/VEGA_X86/gem5.opt   # used when present; else fixtures
+  mode: GPUFS                                  # GPUFS | GPUSE
+  disk_image: rocm6_ubuntu.img
+  config: collectors/gem5/configs/gpu_mi300x.py
+  config_fixture: fixtures/gem5/config.json
+  knobs: { cus: 304, xcds: 8, simdPerCu: 4, wavefront: 64,
+           l1KB: 32, l2MB: 4, llcMB: 256, hbmGB: 192, bwGBs: 5300, clockMHz: 2100,
+           protocol: GPU_VIPER, mem: HBM3_4H_2000, partition: "SPX / NPS1" }
+  fixtures:                                     # per-workload recorded stats.txt (demo)
+    gemm: fixtures/gem5/stats.txt
+    ppo_infer: fixtures/gem5/stats_ppo_infer.txt
+
+# ---- device source (real MI300X) ----
+device:
+  gpu_index: 0
+  endpoint: rocm://mi300x-cloud-01:9400
+  sampling_hz: 1000
+  fixtures:                                     # recorded device scalars (demo)
+    gemm: fixtures/device/gemm.json
+    ppo_infer: fixtures/device/ppo_infer.json
+
+# ---- per-layer enable/overrides ----
+layers:
+  L0: { enabled: true, counters: configs/counters/l0.txt }
+  L1: { enabled: true }
+  L2: { enabled: true, ftrace_events: [amdgpu, kfd] }
+  L3: { enabled: true }
+  L4: { enabled: true, rocblas_layer: 2, nccl_debug: INFO }
+  L5: { enabled: true, profiler: kineto }
+  L6: { enabled: true }
+  L7: { enabled: true }
+
+# ---- predictor ----
+predict:
+  enabled: true
+  predictor: baseline
+  sinks: [file, dashboard]
+
+# ---- output ----
+output:
+  runs_dir: runs
+  dashboard_data_dir: ../mi300x-dashboard/data

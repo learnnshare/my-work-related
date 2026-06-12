@@ -1,0 +1,14 @@
+
+---------- Begin Simulation Statistics ----------
+simSeconds                                   0.000005                       # Number of seconds simulated (tiny MLP kernel)
+simTicks                                     5000000                       # ticks
+system.gpu.numCycles                           10500                       # gpu cycles
+system.gpu.numKernelsLaunched                      6                       # kernels dispatched
+system.gpu.CUs00.numALUInsts                    18000                       # ALU instructions
+system.gpu.CUs00.vectorRegsReads               240000                      # VGPR reads
+system.mem_ctrls0.bytesRead::total            3000000                      # bytes read (weights)
+system.mem_ctrls0.bytesWritten::total          200000                      # bytes written
+system.ruby.L1Cache.m_demand_hits              140000                       # L1D hits
+system.ruby.L1Cache.m_demand_misses             60000                       # L1D misses
+system.gpu.dispatchLatency                          5                      # dispatch latency cycles
+---------- End Simulation Statistics ----------
