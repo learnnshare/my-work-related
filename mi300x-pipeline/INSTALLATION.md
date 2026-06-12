@@ -109,6 +109,24 @@ On this box you're **root on ROCm 7**, so: no `render/video` group step, no
 re-login, and `amd-smi` is the SMI tool. Most MI300X images already ship a
 ROCm-built PyTorch — the script keeps it if present (only installs if missing).
 Add `--install-rocm` only if `rocminfo` is absent (rare).
+
+### Isolated box (wget / git / pip work, but no apt or sudo)
+
+This matches the confirmed environment. The script's `apt` steps are **non-fatal
+and auto-skip**; it installs deps with `pip` (venv if available, else `--user`)
+and you bring the repo in with `git clone`. No internet wheelhouse needed. Exact
+sequence:
+
+```bash
+git clone <your-repo-url> ~/mi300x-pipeline      # wget/git allowed
+cd ~/mi300x-pipeline
+pip install -r requirements.txt                  # core: pyyaml (+ sklearn/numpy)
+python -c "import torch; print(torch.__version__, torch.cuda.is_available())"  # keep image's torch
+bash scripts/preflight.sh                        # confirm amd-smi / rocprofv3 / torch
+bash scripts/02_setup_cloud_mi300x.sh            # apt steps skip, pip/torch handled
+```
+If `pip` needs a flag in your sandbox, `pip install --user -r requirements.txt`
+also works. Do **not** reinstall torch if `cuda.is_available()` is already `True`.
 Then run a real capture and copy results back:
 ```bash
 # on cloud:
