@@ -65,7 +65,7 @@ def ensure_binary(name="vectoradd"):
     return binp
 
 
-def run_rocprofv3(app, outdir, pmc=None, trace=False):
+def run_rocprofv3(app, outdir, pmc=None, trace=False, timeout=180):
     outdir.mkdir(parents=True, exist_ok=True)
     cmd = ["rocprofv3"]
     if trace:
@@ -73,8 +73,11 @@ def run_rocprofv3(app, outdir, pmc=None, trace=False):
     if pmc:
         cmd += ["--pmc"] + pmc
     cmd += ["--output-format", "csv", "-d", str(outdir), "--", str(app)]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    return r.returncode, (r.stdout + r.stderr)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return r.returncode, (r.stdout + r.stderr)
+    except subprocess.TimeoutExpired:
+        return 124, f"TIMEOUT after {timeout}s"
 
 
 def _merge_counters(dst, src):
@@ -93,10 +96,13 @@ def capture(app, raw_dir):
 
     counters = {}
     for i, grp in enumerate(PMC_GROUPS):
+        print(f"  → pmc group {i + 1}/{len(PMC_GROUPS)}: {grp} ...")
         pdir = raw_dir / f"pmc{i}"
         rc, log = run_rocprofv3(app, pdir, pmc=grp)
         if rc != 0:
             print(f"  pmc group {grp} rejected (rc={rc}) — skipping")
+            if rc == 124:
+                print(f"    (timed out — likely counter multiplexing; skip in PMC_GROUPS if it recurs)")
             continue
         p = R.find_outputs(str(pdir))
         _merge_counters(counters, R.parse_counters(p["counters"]))
@@ -228,6 +234,12 @@ def main():
     ap.add_argument("--fixtures", action="store_true", help="use bundled CSVs (no GPU)")
     ap.add_argument("--dashboard", default="../mi300x-dashboard/data")
     args = ap.parse_args()
+
+    # line-buffer stdout so progress shows live even when piped to tee
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except Exception:
+        pass
 
     ts = datetime.now(timezone.utc)
     run_id = ts.strftime("%Y%m%dT%H%M%SZ") + "_device_" + args.workload
