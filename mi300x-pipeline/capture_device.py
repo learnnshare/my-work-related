@@ -363,7 +363,8 @@ def main():
     ap.add_argument("--sweep", action="store_true",
                     help="capture a grid of GEMM sizes × precisions into a dataset")
     ap.add_argument("--sizes", default="2048,4096,8192", help="sweep GEMM sizes (M=N=K)")
-    ap.add_argument("--precisions", default="fp16,bf16,fp8", help="sweep precisions")
+    ap.add_argument("--precisions", default="fp16,bf16",
+                    help="sweep precisions (rocBLAS path: fp16,bf16; fp8 needs hipBLASLt)")
     ap.add_argument("--iters", type=int, default=20, help="GEMM iterations per point")
     args = ap.parse_args()
     prof = WORKLOAD_PROFILES[args.workload]

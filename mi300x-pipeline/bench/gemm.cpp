@@ -12,16 +12,18 @@
 #define CK(x) do { hipError_t e=(x); if(e){printf("HIP err %d %s @%d\n",e,hipGetErrorString(e),__LINE__); return 2;} } while(0)
 #define RB(x) do { rocblas_status s=(x); if(s!=rocblas_status_success){printf("rocBLAS err %d @%d\n",(int)s,__LINE__); return 3;} } while(0)
 
+// NOTE: rocBLAS on ROCm 7 dropped the fp8 datatype enum (fp8 GEMM now lives in
+// hipBLASLt). So this rocBLAS path supports fp16 and bf16; "fp8" is rejected in
+// main() and the sweep skips it. A hipBLASLt fp8 bench can be added later.
 static rocblas_datatype in_type(const std::string& p) {
     if (p == "bf16") return rocblas_datatype_bf16_r;
-    if (p == "fp8")  return rocblas_datatype_f8_r;
     return rocblas_datatype_f16_r;
 }
 static rocblas_datatype out_type(const std::string& p) {
     if (p == "bf16") return rocblas_datatype_bf16_r;
-    return rocblas_datatype_f16_r;        // fp8/fp16 inputs -> f16 output
+    return rocblas_datatype_f16_r;
 }
-static size_t in_bytes(const std::string& p) { return p == "fp8" ? 1 : 2; }
+static size_t in_bytes(const std::string&) { return 2; }   // fp16/bf16 = 2 bytes
 static size_t out_bytes(const std::string&) { return 2; }
 
 int main(int argc, char** argv) {
@@ -30,6 +32,11 @@ int main(int argc, char** argv) {
     if (argc > 3) { m = atoi(argv[1]); n = atoi(argv[2]); k = atoi(argv[3]); }
     if (argc > 4) prec = argv[4];
     if (argc > 5) iters = atoi(argv[5]);
+
+    if (prec != "fp16" && prec != "bf16") {
+        printf("UNSUPPORTED precision %s via rocBLAS on this build (fp8 needs hipBLASLt)\n", prec.c_str());
+        return 5;
+    }
 
     int count = 0;
     if (hipGetDeviceCount(&count) != hipSuccess || count == 0) { printf("NO HIP DEVICE\n"); return 4; }
