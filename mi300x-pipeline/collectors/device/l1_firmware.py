@@ -20,9 +20,13 @@ class L1Firmware(DeviceCollector):
         fw_label = "amdgpu"
 
         if has_binary("amd-smi"):
+            # partition lives under `amd-smi partition` (not `static`) on ROCm 7
+            partj = amd_smi_json("partition", gpu=gpu) or {}
+            part = deep_find(partj, "accelerator_type", "compute_partition", "partition_mode")
+            mpart = deep_find(partj, "current_memory_partition", "memory_partition")
             static = amd_smi_json("static", gpu=gpu) or {}
-            part = deep_find(static, "compute_partition", "partition_mode")
-            mpart = deep_find(static, "memory_partition")
+            part = part or deep_find(static, "compute_partition", "partition_mode")
+            mpart = mpart or deep_find(static, "memory_partition")
             metric = amd_smi_json("metric", gpu=gpu) or {}
             e = deep_find(metric, "correctable_count", "ce")
             ecc = int(e) if isinstance(e, (int, float)) else 0

@@ -59,6 +59,11 @@ cap "amd-smi monitor (1 shot)" amd-smi monitor -g 0 -i 1
 cap "amd-smi partition" amd-smi partition
 cap "rocm-smi (fallback)" rocm-smi --showproductname --showpartition
 
+hr "GPU JSON (for parser tuning — exact amd-smi field names)"
+cap "amd-smi metric --json (truncated)" bash -c "amd-smi metric -g 0 --json 2>/dev/null | head -c 3500"
+cap "amd-smi static --json (truncated)" bash -c "amd-smi static -g 0 --json 2>/dev/null | head -c 1500"
+cap "amd-smi partition --json" bash -c "amd-smi partition --json 2>/dev/null | head -c 2000"
+
 hr "ROCm STACK"
 cap "rocminfo (head)" bash -c "rocminfo 2>/dev/null | sed -n '1,60p'"
 echo "  gfx target: $(rocminfo 2>/dev/null | grep -m1 -oE 'gfx[0-9a-f]+')"

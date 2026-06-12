@@ -86,28 +86,48 @@ else
   python3 -m pip install --user -r "$REPO_DIR/requirements.txt" && ok "deps installed (--user)"
 fi
 
-# 5. PyTorch for ROCm — many MI300X images SHIP torch; only install if missing.
-step "Checking PyTorch (ROCm build)"
-if python - <<'PY'
-import sys
+# 5. PyTorch for ROCm. A CUDA/CPU wheel (e.g. 2.10.0+cu128) CANNOT use the
+# MI300X — detect that and replace it with a ROCm build.
+step "Checking PyTorch build"
+TORCH_STATE="$(python - <<'PY'
 try:
     import torch
-    sys.exit(0 if torch.cuda.is_available() else 1)
+    if torch.cuda.is_available():
+        print("ok")
+    elif getattr(torch.version, "hip", None) is None:
+        print("wrongbuild")   # CUDA/CPU wheel on an AMD box
+    else:
+        print("rocm_no_gpu")
 except Exception:
-    sys.exit(2)
+    print("missing")
 PY
-then
-  ok "torch already present and sees the GPU — leaving it alone"
+)"
+if [ "$TORCH_STATE" = "ok" ]; then
+  ok "torch is a ROCm build and sees the GPU — leaving it alone"
 else
-  warn "torch missing or GPU not visible — attempting a ROCm wheel"
-  TORCH_IDX="${TORCH_ROCM_INDEX:-https://download.pytorch.org/whl/rocm6.3}"
-  warn "your box is ROCm 7.0; stable torch wheels lag — trying $TORCH_IDX"
-  warn "if it mismatches, set TORCH_ROCM_INDEX to a matching wheel (or use the image's torch) — see pytorch.org/get-started"
-  pip install --index-url "$TORCH_IDX" torch || warn "torch install failed — use the image's prebuilt torch"
+  if [ "$TORCH_STATE" = "wrongbuild" ]; then
+    warn "installed torch is a CUDA/CPU build (no HIP) — it can't use the MI300X; replacing"
+    pip uninstall -y torch torchvision torchaudio 2>/dev/null || true
+  elif [ "$TORCH_STATE" = "missing" ]; then
+    warn "torch missing — installing a ROCm build"
+  else
+    warn "torch is ROCm but GPU not visible — check drivers; will try a reinstall"
+  fi
+  # auto-pick the best available ROCm wheel index (your box reaches pytorch.org)
+  IDX=""
+  for cand in ${TORCH_ROCM_INDEX:-} rocm7.0 rocm6.4 rocm6.3; do
+    url="$cand"; case "$cand" in http*) ;; *) url="https://download.pytorch.org/whl/$cand";; esac
+    if curl -sf -o /dev/null "$url/"; then IDX="$url"; break; fi
+  done
+  [ -n "$IDX" ] || IDX="https://download.pytorch.org/whl/rocm6.4"
+  step "Installing torch from $IDX"
+  pip install --index-url "$IDX" torch || warn "torch ROCm install failed — see pytorch.org/get-started/locally"
 fi
 python - <<'PY' || true
 try:
-    import torch; print("  torch", torch.__version__, "| GPU visible:", torch.cuda.is_available())
+    import torch
+    print("  torch", torch.__version__, "| hip", getattr(torch.version,"hip",None),
+          "| GPU visible:", torch.cuda.is_available())
 except Exception as e:
     print("  torch not importable:", e)
 PY
