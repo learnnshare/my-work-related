@@ -27,17 +27,21 @@ page choose the **Executive** or **Developer** dashboard.
 | `executive.html` | **Domain-neutral.** Outcome KPIs: throughput, cost/1M, $/hr, SLA, TCO projection |
 | `developer.html` | **Domain-neutral.** L0–L6 AMD/ROCm stack telemetry + roofline, latency, timeline |
 | `physical-ai.html` | **Use-case.** Real-time control deadlines + sim-to-real prediction (±20%) |
-| `CONCEPT.md` | Design brief / brainstorm behind the three dashboards |
+| `architect.html` | **Use-case / power-user.** gem5 config from spec, datasets, predictor accuracy, device/trace I/O, LLM copilot |
+| `CONCEPT.md` | Design brief / brainstorm behind the dashboards |
 | `assets/sim.js` | Shared simulation engine — knobs → metrics + sim-to-real prediction |
 | `assets/charts.js` | Dependency-free SVG charts (gauge, line, bar, donut, roofline, histogram, timeline, parity, budget) |
 | `assets/style.css` | Shared AMD-inspired dark theme |
 
-### Three lenses on the same MI300X telemetry
+### Four lenses on the same MI300X telemetry
 
 - **Executive** and **Developer** are *domain-neutral* — useful for any workload.
 - **Physical AI** is the *use-case* lens for the Real-to-Sim initiative: it frames
   performance around robot control deadlines and validates predicted (simulation)
   vs measured (real MI300X) metrics against the ±20% success criterion.
+- **Architect** is the *power-user workbench* that wires the whole pipeline
+  together: design spec → gem5 config, dataset setup, predictor training &
+  accuracy, real-device/trace I/O, and an LLM copilot grounded in the config.
 
 See [`CONCEPT.md`](CONCEPT.md) for the full design rationale.
 

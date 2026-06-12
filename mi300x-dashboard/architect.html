@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physical AI Architect — MI300X Console</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+/* architect-specific components */
+.stepper { display:flex; flex-direction:column; gap:6px; }
+.step { display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:10px;
+  cursor:pointer; border:1px solid transparent; color:var(--text-dim); }
+.step:hover { background:var(--panel2); color:var(--text-hi); }
+.step.on { background:linear-gradient(90deg,rgba(237,28,36,.14),transparent); border-color:var(--border2); color:var(--text-hi); }
+.step .n { width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-weight:800;
+  font-size:12px;background:var(--bg2);border:1px solid var(--border2); color:var(--text-dim); flex:none; }
+.step.on .n { background:var(--red); color:#fff; border-color:var(--red); }
+.step.done .n { background:var(--green); color:#06121a; border-color:var(--green); }
+.step .t { font-size:13px; }
+.step .d { font-size:10.5px; color:var(--text-dim); }
+.section { display:none; }
+.section.on { display:block; animation:fade .2s ease; }
+@keyframes fade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+.drop { border:2px dashed var(--border2); border-radius:14px; padding:26px; text-align:center;
+  cursor:pointer; transition:.15s; background:var(--bg2); }
+.drop:hover, .drop.hot { border-color:var(--teal); background:rgba(0,194,178,.05); }
+.drop .ic { font-size:30px; } .drop .h { color:var(--text-hi); font-weight:600; margin-top:6px; }
+.drop .s { color:var(--text-dim); font-size:12px; }
+.pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+.pfield { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.pfield .pk { font-size:11px; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center; }
+.pfield input { margin-top:5px; padding:6px 8px; font-size:13px; }
+.conf { font-size:9px; padding:1px 6px; border-radius:999px; font-weight:600; }
+.conf.hi{background:rgba(57,211,83,.15);color:var(--green)} .conf.md{background:rgba(0,194,178,.15);color:var(--teal)}
+.conf.lo{background:rgba(255,177,0,.15);color:var(--amber)}
+pre.code { background:#07090f; border:1px solid var(--border); border-radius:10px; padding:14px;
+  overflow:auto; font-size:11.5px; color:#bcd; line-height:1.5; font-family:ui-monospace,Menlo,Consolas,monospace; }
+.tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+.tbl th { text-align:left; color:var(--text-dim); font-weight:500; padding:7px 8px; border-bottom:1px solid var(--border2); font-size:11px; text-transform:uppercase; letter-spacing:.5px; }
+.tbl td { padding:8px; border-bottom:1px solid var(--border); }
+.tbl tr:hover td { background:rgba(255,255,255,.02); }
+.tag2 { font-size:10px; padding:1px 7px; border-radius:999px; background:var(--panel2); color:var(--text-dim); }
+.tag2.held { color:var(--amber); background:rgba(255,177,0,.12); }
+.fbar { display:flex; align-items:center; gap:10px; margin:6px 0; }
+.fbar .fl { width:170px; font-size:12px; color:var(--text); flex:none; }
+.fbar .ft { flex:1; height:9px; background:var(--track,#1b2230); border-radius:5px; overflow:hidden; }
+.fbar .ft > i { display:block; height:100%; border-radius:5px; }
+.fbar .fv { width:42px; text-align:right; font-size:11px; color:var(--text-dim); }
+.btn { background:var(--red); color:#fff; border:none; border-radius:9px; padding:10px 18px;
+  font-size:13px; font-weight:600; cursor:pointer; }
+.btn:hover { filter:brightness(1.1); } .btn.ghost { background:transparent; border:1px solid var(--border2); color:var(--text); }
+.btn:disabled { opacity:.5; cursor:default; }
+.chat { display:flex; flex-direction:column; height:440px; }
+.msgs { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:4px; }
+.msg { max-width:82%; padding:10px 13px; border-radius:12px; font-size:13px; line-height:1.5; }
+.msg.u { align-self:flex-end; background:var(--red); color:#fff; border-bottom-right-radius:3px; }
+.msg.a { align-self:flex-start; background:var(--panel2); border:1px solid var(--border); border-bottom-left-radius:3px; }
+.msg.a strong { color:var(--teal); }
+.chatin { display:flex; gap:8px; margin-top:10px; }
+.chatin input { flex:1; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.chip { font-size:11px; padding:5px 10px; border-radius:999px; border:1px solid var(--border2);
+  background:var(--bg2); color:var(--text-dim); cursor:pointer; }
+.chip:hover { color:var(--text-hi); border-color:var(--teal); }
+.statusdot { width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px; }
+.live-c { background:var(--green); box-shadow:0 0 8px var(--green); }
+.trace-c { background:var(--amber); }
+.kv { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.kv:last-child{border:none} .kv .k{color:var(--text-dim)} .kv .v{color:var(--text-hi);font-weight:600}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">▲</div>
+    <div>
+      <h1>MI300X Performance Console</h1>
+      <div class="sub">Physical AI Architect · gem5 + datasets + predictor + copilot · simulated</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">Home</a>
+  <a class="navlink" href="executive.html">Executive</a>
+  <a class="navlink" href="developer.html">Developer</a>
+  <a class="navlink" href="physical-ai.html">Physical AI</a>
+  <a class="navlink active" href="architect.html">Architect</a>
+</div>
+
+<div class="wrap">
+  <div class="layout">
+    <!-- PIPELINE STEPPER -->
+    <aside class="controls">
+      <h2>Architect pipeline</h2>
+      <div class="stepper" id="stepper">
+        <div class="step on" data-sec="gem5"><div class="n">1</div><div><div class="t">Hardware → gem5</div><div class="d">spec upload · param extract</div></div></div>
+        <div class="step" data-sec="workload"><div class="n">2</div><div><div class="t">Workload</div><div class="d">benchmark configuration</div></div></div>
+        <div class="step" data-sec="data"><div class="n">3</div><div><div class="t">Datasets</div><div class="d">train · validation · held-out</div></div></div>
+        <div class="step" data-sec="accuracy"><div class="n">4</div><div><div class="t">Train & Accuracy</div><div class="d">fit predictor · ±20%</div></div></div>
+        <div class="step" data-sec="device"><div class="n">5</div><div><div class="t">Device / Trace</div><div class="d">live data or fallback</div></div></div>
+        <div class="step" data-sec="llm"><div class="n">6</div><div><div class="t">LLM Copilot</div><div class="d">configure · chat</div></div></div>
+      </div>
+      <div class="wl-note" style="margin-top:16px" id="pipeStatus">Pipeline ready. Start by uploading a hardware design spec.</div>
+    </aside>
+
+    <main>
+      <!-- ===== 1. GEM5 ===== -->
+      <section class="section on" id="sec-gem5">
+        <div class="card">
+          <h3>① Hardware design spec → gem5 configuration</h3>
+          <input type="file" id="specFile" style="display:none" accept=".pdf,.json,.yaml,.yml,.txt">
+          <div class="drop" id="drop">
+            <div class="ic">📄⚙️</div>
+            <div class="h">Drop a design spec, or click to choose</div>
+            <div class="s">PDF / JSON / YAML — parameters are extracted automatically for the gem5 model</div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <div style="flex:1">
+              <label class="note">…or pick a sample spec</label>
+              <select id="specSel"></select>
+            </div>
+            <button class="btn" id="extractBtn" style="align-self:flex-end">Extract parameters</button>
+          </div>
+        </div>
+
+        <div class="card" id="extractCard" style="display:none;margin-top:18px">
+          <h3>Extracted gem5 parameters <span class="tag" id="extractMeta"></span></h3>
+          <div class="pgrid" id="paramGrid"></div>
+        </div>
+
+        <div class="card" id="genCard" style="display:none;margin-top:18px">
+          <h3>Generated gem5 config <span class="tag">vega/MI300X · GPUFS</span></h3>
+          <pre class="code" id="gem5code"></pre>
+          <div class="note">This config would be passed to <code>gem5.opt configs/example/gpufs/mi300x.py</code>. Review low-confidence fields above before long runs.</div>
+        </div>
+      </section>
+
+      <!-- ===== 2. WORKLOAD ===== -->
+      <section class="section" id="sec-workload">
+        <div class="card">
+          <h3>② Workload configuration</h3>
+          <div class="grid cols-2">
+            <div>
+              <div class="ctrl"><label>Benchmark workload</label><select id="wlSel"></select></div>
+              <div class="ctrl"><label>Precision</label><div class="seg" id="wlPrec"></div></div>
+              <div class="ctrl"><label>Batch size <span class="val" id="wlBatchV">64</span></label>
+                <input type="range" id="wlBatch" min="0" max="14" value="6"></div>
+            </div>
+            <div>
+              <div class="ctrl"><label>Partition</label><div class="seg">
+                <button id="wlSpx" class="on">SPX</button><button id="wlCpx">CPX</button></div></div>
+              <div class="ctrl"><label>GPUs <span class="val" id="wlGpuV">1</span></label>
+                <input type="range" id="wlGpu" min="1" max="8" value="1"></div>
+              <div class="wl-note" id="wlNote"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>Predicted behaviour <span class="tag">from sim model</span></h3>
+          <div class="grid cols-4">
+            <div class="kpi accent-teal"><div class="label">Latency p50</div><div><span class="big" id="wlLat">—</span> <span class="unit">ms</span></div></div>
+            <div class="kpi"><div class="label">Throughput</div><div><span class="big" id="wlThru">—</span> <span class="unit" id="wlThruU"></span></div></div>
+            <div class="kpi accent-amber"><div class="label">Achieved TFLOPS</div><div><span class="big" id="wlTf">—</span></div></div>
+            <div class="kpi accent-red"><div class="label">Bound by</div><div><span class="big" id="wlBound" style="font-size:20px">—</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 3. DATASETS ===== -->
+      <section class="section" id="sec-data">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>③ Training dataset <span class="tag">simulation-derived</span></h3>
+            <div class="kv"><span class="k">Samples</span><span class="v" id="dsTrain">—</span></div>
+            <div class="kv"><span class="k">Workloads × configs</span><span class="v" id="dsTrainWC">—</span></div>
+            <div class="kv"><span class="k">Features (L0–L6)</span><span class="v" id="dsFeat">—</span></div>
+            <div class="kv"><span class="k">Label</span><span class="v" id="dsLabel" style="font-size:11px">—</span></div>
+            <h3 style="margin-top:14px">Sources</h3>
+            <table class="tbl" id="dsSources"></table>
+          </div>
+          <div class="card">
+            <h3>Validation & held-out test</h3>
+            <div class="kv"><span class="k">Validation samples</span><span class="v" id="dsVal">—</span></div>
+            <div class="kv"><span class="k">Held-out test samples</span><span class="v" id="dsTest">—</span></div>
+            <div class="kv"><span class="k">Split (train/val/test)</span><span class="v">70 / 15 / 15</span></div>
+            <h3 style="margin-top:14px">Held-out workloads <span class="tag">never seen in training</span></h3>
+            <div id="dsHeld"></div>
+            <div class="note" style="margin-top:10px">Held-out workloads are the honesty check: the predictor is scored on workloads it never trained on.</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>Feature catalog by layer</h3>
+          <div id="featGroups"></div>
+        </div>
+      </section>
+
+      <!-- ===== 4. ACCURACY ===== -->
+      <section class="section" id="sec-accuracy">
+        <div class="card">
+          <h3>④ Train the predictor <span class="tag">sim features → real latency/throughput</span></h3>
+          <div class="row">
+            <div class="ctrl" style="flex:1"><label>Epochs <span class="val" id="epV">60</span></label>
+              <input type="range" id="ep" min="20" max="120" step="10" value="60"></div>
+            <button class="btn" id="trainBtn" style="align-self:flex-end">Train predictor</button>
+          </div>
+          <div class="chart" id="lossCurve" style="margin-top:8px"></div>
+          <div class="legend"><span><i class="dot" style="background:var(--teal)"></i>train MAE %</span>
+            <span><i class="dot" style="background:var(--amber)"></i>validation MAE %</span></div>
+        </div>
+        <div class="grid cols-4" style="margin-top:18px">
+          <div class="card kpi accent-teal"><div class="label">Validation MAE</div><div><span class="big" id="acMae">—</span> <span class="unit">%</span></div></div>
+          <div class="card kpi"><div class="label">R²</div><div><span class="big" id="acR2">—</span></div></div>
+          <div class="card kpi accent-amber"><div class="label">Models within ±20%</div><div><span class="big" id="acWithin">—</span> <span class="unit">%</span></div></div>
+          <div class="card kpi accent-red"><div class="label">Target</div><div><span class="big">±20</span> <span class="unit">%</span></div></div>
+        </div>
+        <div class="grid cols-2" style="margin-top:18px">
+          <div class="card">
+            <h3>Per-workload accuracy</h3>
+            <table class="tbl" id="scoreTbl"></table>
+          </div>
+          <div class="card">
+            <h3>Feature importance <span class="tag">which layers carry signal</span></h3>
+            <div id="featImp"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 5. DEVICE / TRACE ===== -->
+      <section class="section" id="sec-device">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>⑤ Connect a real device</h3>
+            <div class="ctrl"><label>Telemetry endpoint</label>
+              <input type="text" id="devEndpoint" value="rocm://mi300x-cloud-01:9400"></div>
+            <div class="ctrl"><label>Auth token</label>
+              <input type="password" id="devToken" placeholder="paste device/cloud token"></div>
+            <div class="row">
+              <button class="btn" id="connectBtn">Connect device</button>
+              <button class="btn ghost" id="disconnectBtn">Use trace instead</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Data source status</h3>
+            <div style="font-size:15px;margin:6px 0 12px"><span class="statusdot trace-c" id="statusDot"></span><span id="statusText" style="color:var(--text-hi);font-weight:600">—</span></div>
+            <div class="kv"><span class="k">Mode</span><span class="v" id="devMode">—</span></div>
+            <div class="kv"><span class="k">Source</span><span class="v" id="devSource" style="font-size:11px">—</span></div>
+            <div class="kv"><span class="k">Driver</span><span class="v" id="devDriver">—</span></div>
+            <div class="kv"><span class="k">GPUs</span><span class="v" id="devGpus">—</span></div>
+            <div class="kv"><span class="k">Sampling</span><span class="v" id="devSampling">—</span></div>
+            <div class="ctrl" id="traceWrap" style="margin-top:14px"><label>Fallback trace file</label><select id="traceSel"></select></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <div class="note">When no device is connected the workbench transparently <strong>falls back to a recorded trace</strong>, so every panel still shows data. Connect a live MI300X to replace the trace with streaming rocprofiler telemetry — the predicted-vs-measured parity plot then uses true ground truth.</div>
+        </div>
+      </section>
+
+      <!-- ===== 6. LLM COPILOT ===== -->
+      <section class="section" id="sec-llm">
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>⑥ LLM copilot configuration</h3>
+            <div class="ctrl"><label>Provider</label>
+              <select id="llmProvider"><option>Anthropic (Claude)</option><option>Self-hosted (vLLM on MI300X)</option><option>OpenAI-compatible</option></select></div>
+            <div class="ctrl"><label>Model</label><select id="llmModel"></select></div>
+            <div class="ctrl"><label>API endpoint</label><input type="text" id="llmEndpoint" value="https://api.anthropic.com/v1/messages"></div>
+            <div class="ctrl"><label>API key</label><input type="password" id="llmKey" placeholder="sk-ant-..."></div>
+            <div class="ctrl"><label>Temperature <span class="val" id="tempV">0.3</span></label>
+              <input type="range" id="temp" min="0" max="100" value="30"></div>
+            <div class="ctrl"><label>System prompt</label>
+              <select id="llmSys">
+                <option>MI300X architecture copilot (grounded in this workbench)</option>
+                <option>gem5 simulation expert</option>
+                <option>Performance-engineering reviewer</option>
+              </select></div>
+            <div class="note" id="llmStatus">Offline demo mode — replies are generated locally from your workbench state. Add an API key to use the live model.</div>
+          </div>
+          <div class="card">
+            <h3>Copilot chat <span class="tag" id="chatModelTag">claude-fable-5</span></h3>
+            <div class="chat">
+              <div class="chips" id="chips"></div>
+              <div class="msgs" id="msgs"></div>
+              <div class="chatin">
+                <input type="text" id="chatInput" placeholder="Ask about gem5 config, accuracy, what to sweep next…">
+                <button class="btn" id="sendBtn">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="disclaimer">
+        <strong>Architect workbench — simulated.</strong> gem5 extraction, datasets, training curves, device
+        status, and copilot replies are generated locally for look-and-feel. In the next phase each becomes
+        a real connector: spec parsing → gem5 config; rocprofiler/agnostic-sim → dataset; a trained model →
+        accuracy; a live MI300X endpoint → ground truth; and a real LLM API (default <code>claude-fable-5</code>)
+        → the copilot. No internet required to run this mockup.
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/sim.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+/* ---------- stepper ---------- */
+const steps = [...document.querySelectorAll('.step')];
+steps.forEach(s => s.onclick = () => {
+  steps.forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.section').forEach(x => x.classList.remove('on'));
+  s.classList.add('on'); s.classList.add('done');
+  document.getElementById('sec-' + s.dataset.sec).classList.add('on');
+});
+function markDone(sec){ const s=steps.find(x=>x.dataset.sec===sec); if(s)s.classList.add('done'); }
+
+/* ---------- 1. GEM5 ---------- */
+let gem5raw = null;
+const specSel = document.getElementById('specSel');
+Object.entries(GEM5_SPECS).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k; o.textContent=v; specSel.appendChild(o); });
+const drop = document.getElementById('drop'), specFile = document.getElementById('specFile');
+drop.onclick = ()=> specFile.click();
+drop.ondragover = e=>{ e.preventDefault(); drop.classList.add('hot'); };
+drop.ondragleave = ()=> drop.classList.remove('hot');
+drop.ondrop = e=>{ e.preventDefault(); drop.classList.remove('hot');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0].name); };
+specFile.onchange = e=>{ if(e.target.files[0]) handleFile(e.target.files[0].name); };
+function guessSpec(name){ const n=name.toLowerCase();
+  if(n.includes('cpx')||n.includes('nps4')) return 'mi300x_cpx_nps4.json';
+  if(n.includes('250')||n.includes('90a')) return 'mi250x_spec.pdf';
+  if(n.includes('yaml')||n.includes('yml')||n.includes('custom')) return 'custom_accelerator.yaml';
+  return 'mi300x_datasheet.pdf'; }
+function handleFile(name){ const key=guessSpec(name);
+  specSel.value=key; drop.querySelector('.h').textContent='Uploaded: '+name;
+  runExtract(key, name); }
+document.getElementById('extractBtn').onclick = ()=> runExtract(specSel.value, specSel.options[specSel.selectedIndex].text);
+
+function runExtract(key, srcName){
+  const meta = document.getElementById('extractMeta');
+  document.getElementById('extractCard').style.display='block';
+  meta.textContent='parsing '+srcName+' …';
+  document.getElementById('paramGrid').innerHTML='<div class="note">Extracting parameters…</div>';
+  document.getElementById('pipeStatus').textContent='Parsing design spec and extracting gem5 parameters…';
+  setTimeout(()=>{
+    const ex = extractGem5Params(key); gem5raw = ex.raw;
+    meta.textContent = (ex.avgConf*100).toFixed(0)+'% avg confidence · '+ex.fields.length+' fields';
+    document.getElementById('paramGrid').innerHTML = ex.fields.map(f=>{
+      const c = f.conf>=0.95?'hi':f.conf>=0.85?'md':'lo';
+      return `<div class="pfield"><div class="pk"><span>${f.k}</span><span class="conf ${c}">${(f.conf*100).toFixed(0)}%</span></div>
+        <input value="${f.v}${f.unit?(' '+f.unit):''}"></div>`;
+    }).join('');
+    renderGem5Code(ex.raw, srcName);
+    markDone('gem5');
+    document.getElementById('pipeStatus').textContent='gem5 config ready ('+ex.raw.isa+', '+ex.raw.cus+' CUs). Configure your workload next.';
+  }, 650);
+}
+function renderGem5Code(p, src){
+  document.getElementById('genCard').style.display='block';
+  document.getElementById('gem5code').textContent =
+`# auto-generated from: ${src}
+# gem5 GPUFS — AMD ${p.isa.toUpperCase()} model
+from m5.objects import *
+
+system.cpu_type   = "${p.cpuModel}"
+system.mem_model  = "${p.mem}"
+system.ruby.protocol = "${p.protocol}"
+
+gpu = AMDGPUDevice()
+gpu.isa            = "${p.isa}"
+gpu.num_compute_units = ${p.cus}
+gpu.num_xcds       = ${p.xcds}
+gpu.simds_per_cu   = ${p.simdPerCu}
+gpu.wavefront_size = ${p.wavefront}
+gpu.clock          = "${p.clockMHz}MHz"
+
+# memory hierarchy
+gpu.l1d_size       = "${p.l1KB}kB"
+gpu.l2_size        = "${p.l2MB}MB"
+gpu.llc_size       = "${p.llcMB}MB"   # Infinity Cache
+gpu.hbm_capacity   = "${p.hbmGB}GB"
+gpu.hbm_bandwidth  = "${p.bwGBs}GB/s"
+gpu.partition_mode = "${p.partition}"`;
+}
+
+/* ---------- 2. WORKLOAD ---------- */
+const wlcfg = { workload:'gemm', batch:64, precision:null, numGPUs:1, partition:'spx', powerFrac:1, tick:0 };
+const BATCH=[1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384];
+const wlSel=document.getElementById('wlSel');
+Object.entries(WORKLOADS).forEach(([id,w])=>{ const o=document.createElement('option'); o.value=id; o.textContent=w.name; wlSel.appendChild(o); });
+wlSel.value=wlcfg.workload;
+const wlPrec=document.getElementById('wlPrec');
+PRECISIONS.forEach(p=>{ const b=document.createElement('button'); b.textContent=p.toUpperCase(); b.dataset.p=p;
+  b.onclick=()=>{ wlcfg.precision=p; wlSyncP(); wlRender(); }; wlPrec.appendChild(b); });
+function wlSyncP(){ const e=wlcfg.precision||WORKLOADS[wlcfg.workload].pref; [...wlPrec.children].forEach(b=>b.classList.toggle('on',b.dataset.p===e)); }
+wlSel.onchange=()=>{ wlcfg.workload=wlSel.value; wlcfg.precision=null; wlSyncP();
+  document.getElementById('wlNote').textContent=WORKLOADS[wlcfg.workload].note; wlRender(); };
+document.getElementById('wlBatch').oninput=e=>{ wlcfg.batch=BATCH[+e.target.value]; document.getElementById('wlBatchV').textContent=wlcfg.batch.toLocaleString(); wlRender(); };
+document.getElementById('wlGpu').oninput=e=>{ wlcfg.numGPUs=+e.target.value; document.getElementById('wlGpuV').textContent=wlcfg.numGPUs; wlRender(); };
+document.getElementById('wlSpx').onclick=()=>{ wlcfg.partition='spx'; wlSyncPart(); wlRender(); };
+document.getElementById('wlCpx').onclick=()=>{ wlcfg.partition='cpx'; wlSyncPart(); wlRender(); };
+function wlSyncPart(){ document.getElementById('wlSpx').classList.toggle('on',wlcfg.partition==='spx'); document.getElementById('wlCpx').classList.toggle('on',wlcfg.partition==='cpx'); }
+function wlRender(){ const m=computeMetrics(wlcfg);
+  document.getElementById('wlLat').textContent=m.latencyP50.toFixed(m.latencyP50<1?3:2);
+  document.getElementById('wlThru').textContent=fmtNum(m.throughput);
+  document.getElementById('wlThruU').textContent=m.throughputUnit+'/s';
+  document.getElementById('wlTf').textContent=fmtNum(m.achievedTflops);
+  document.getElementById('wlBound').textContent=m.boundBy;
+  markDone('workload'); }
+
+/* ---------- 3. DATASETS ---------- */
+function renderData(){ const d=datasetProfile();
+  document.getElementById('dsTrain').textContent=d.train.samples.toLocaleString();
+  document.getElementById('dsTrainWC').textContent=d.train.workloads+' × '+d.train.configs;
+  document.getElementById('dsFeat').textContent=d.features;
+  document.getElementById('dsLabel').textContent=d.label;
+  document.getElementById('dsVal').textContent=d.val.samples.toLocaleString();
+  document.getElementById('dsTest').textContent=d.test.samples.toLocaleString();
+  document.getElementById('dsSources').innerHTML='<tr><th>Source</th><th>Rows</th><th>Kind</th></tr>'+
+    d.sources.map(s=>`<tr><td>${s.name}</td><td>${s.rows.toLocaleString()}</td><td><span class="tag2 ${s.kind==='device'?'held':''}">${s.kind}${s.note?' · '+s.note:''}</span></td></tr>`).join('');
+  document.getElementById('dsHeld').innerHTML=d.heldOutWorkloads.map(w=>`<span class="tag2 held" style="margin:3px 4px 0 0;display:inline-block">${w}</span>`).join('');
+  document.getElementById('featGroups').innerHTML=d.featureGroups.map(g=>{
+    return `<div class="fbar"><div class="fl">${g.layer} features</div><div class="ft"><i style="width:${g.n/9*100}%;background:var(--teal)"></i></div><div class="fv">${g.n}</div></div>`;
+  }).join('');
+  markDone('data'); }
+
+/* ---------- 4. ACCURACY ---------- */
+function renderAccuracy(epochs){
+  const c=trainingCurve(epochs||60);
+  lineChart(document.getElementById('lossCurve'),
+    [{data:c.train,color:C.teal},{data:c.val,color:C.amber}],
+    {w:560,h:200,maxY:38,xlabel:'epoch (MAE %)'});
+  const sc=predictorScorecard();
+  document.getElementById('acMae').textContent=sc.mae;
+  document.getElementById('acR2').textContent=sc.r2;
+  document.getElementById('acWithin').textContent=sc.withinModels;
+  document.getElementById('scoreTbl').innerHTML='<tr><th>Workload</th><th>Within ±20%</th><th>MAE</th><th></th></tr>'+
+    sc.rows.map(r=>`<tr><td>${r.workload.slice(0,30)}</td>
+      <td><span class="${r.withinPct>=80?'ok':r.withinPct>=60?'warn':'bad'}">${r.withinPct.toFixed(0)}%</span></td>
+      <td>${r.meanErrPct.toFixed(1)}%</td>
+      <td>${r.heldOut?'<span class="tag2 held">held-out</span>':''}</td></tr>`).join('');
+  const fi=featureImportance(), max=Math.max(...fi.map(f=>f.v));
+  const cols=['#ED1C24','#FF7A45','#FFB100','#39D353','#00C2B2','#3FA7FF','#B07CFF'];
+  document.getElementById('featImp').innerHTML=fi.map(f=>
+    `<div class="fbar"><div class="fl" style="width:175px">${f.k}</div><div class="ft"><i style="width:${f.v/max*100}%;background:${cols[f.layer]}"></i></div><div class="fv">${(f.v*100).toFixed(0)}%</div></div>`).join('');
+  markDone('accuracy');
+}
+document.getElementById('ep').oninput=e=>{ document.getElementById('epV').textContent=e.target.value; };
+document.getElementById('trainBtn').onclick=function(){ this.disabled=true; this.textContent='Training…';
+  document.getElementById('pipeStatus').textContent='Fitting predictor on simulation features…';
+  setTimeout(()=>{ renderAccuracy(+document.getElementById('ep').value); this.disabled=false; this.textContent='Retrain';
+    document.getElementById('pipeStatus').textContent='Predictor trained. Validation MAE ~'+predictorScorecard().mae+'%.'; }, 700); };
+
+/* ---------- 5. DEVICE / TRACE ---------- */
+const traceSel=document.getElementById('traceSel');
+function setDevice(connected){
+  const d=deviceStatus(connected, document.getElementById('devEndpoint').value);
+  document.getElementById('statusDot').className='statusdot '+(connected?'live-c':'trace-c');
+  document.getElementById('statusText').textContent=connected?'LIVE — streaming from device':'TRACE FALLBACK';
+  document.getElementById('devMode').textContent=d.mode;
+  document.getElementById('devSource').textContent=d.source;
+  document.getElementById('devDriver').textContent=d.driver;
+  document.getElementById('devGpus').textContent=d.gpus;
+  document.getElementById('devSampling').textContent=d.sampling;
+  document.getElementById('traceWrap').style.display=connected?'none':'block';
+  if(!connected && !traceSel.options.length){ d.available.forEach(t=>{ const o=document.createElement('option'); o.textContent=t; traceSel.appendChild(o); }); }
+  document.getElementById('pipeStatus').textContent=connected?'Live device connected — using real ground truth.':'No device — using recorded trace.';
+  markDone('device');
+}
+document.getElementById('connectBtn').onclick=()=>setDevice(true);
+document.getElementById('disconnectBtn').onclick=()=>setDevice(false);
+
+/* ---------- 6. LLM COPILOT ---------- */
+const llmModel=document.getElementById('llmModel');
+LLM_MODELS.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name+' — '+m.note; llmModel.appendChild(o); });
+llmModel.value='claude-fable-5';
+llmModel.onchange=()=>document.getElementById('chatModelTag').textContent=llmModel.value;
+document.getElementById('temp').oninput=e=>document.getElementById('tempV').textContent=(e.target.value/100).toFixed(2);
+const msgs=document.getElementById('msgs'), chatInput=document.getElementById('chatInput');
+function addMsg(text, who){ const d=document.createElement('div'); d.className='msg '+who;
+  d.innerHTML=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; }
+function ctx(){ return { model: llmModel.value, gem5: gem5raw||extractGem5Params('mi300x_datasheet.pdf').raw,
+  mae: predictorScorecard().mae, r2: predictorScorecard().r2, features: datasetProfile().features,
+  heldOut: datasetProfile().heldOutWorkloads, trace: deviceStatus(false).source }; }
+function send(text){ const t=text||chatInput.value.trim(); if(!t)return; addMsg(t,'u'); chatInput.value='';
+  const typing=document.createElement('div'); typing.className='msg a'; typing.textContent='…'; msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{ typing.remove(); addMsg(architectAssistant(t, ctx()),'a'); }, 450); }
+document.getElementById('sendBtn').onclick=()=>send();
+chatInput.onkeydown=e=>{ if(e.key==='Enter') send(); };
+const SUGGEST=['Summarize my gem5 config','Why is accuracy low for PPO training?','What should I sweep next?','How do I connect a real device?','Is my control loop within budget?'];
+document.getElementById('chips').innerHTML=SUGGEST.map(s=>`<span class="chip">${s}</span>`).join('');
+[...document.querySelectorAll('.chip')].forEach(c=>c.onclick=()=>send(c.textContent));
+
+/* ---------- init (populate everything so every tab has data) ---------- */
+wlSyncP(); wlSyncPart(); document.getElementById('wlNote').textContent=WORKLOADS[wlcfg.workload].note; wlRender();
+runExtract('mi300x_datasheet.pdf','mi300x_datasheet.pdf (sample)');
+renderData();
+renderAccuracy(60);
+setDevice(false);
+addMsg("Hi — I'm your MI300X architecture copilot (offline demo). I can see your extracted gem5 config and the predictor's accuracy. Ask me anything, or tap a suggestion below.", 'a');
+</script>
+</body>
+</html>

@@ -19,11 +19,13 @@ One product, three lenses on the **same** MI300X telemetry:
 | **Executive** | leadership, buyers | "Is this fast/cheap enough, and what will it cost?" | neutral |
 | **Developer** | engineers | "Where is my time going across the stack (L0–L6)?" | neutral |
 | **Physical AI** | robotics / research | "Will my policy hold its real-time deadline — and can I trust simulation to tell me before I deploy?" | use-case |
+| **Architect** | research / power-user | "How do I configure gem5 from a spec, build the datasets, train the predictor, wire in real data, and reason about it all?" | use-case / workbench |
 
 The first two are **domain-neutral**: useful for any workload on MI300X. The
-third is the **use-case lens** for the Real-to-Sim initiative, where the
-simulation-to-real gap lives. Keeping them separate means the neutral views stay
-reusable while the domain story gets a dedicated home.
+last two are **use-case lenses** for the Real-to-Sim initiative — Physical AI for
+consuming the result (deadlines, sim-to-real validation), Architect for building
+the pipeline that produces it. Keeping them separate means the neutral views stay
+reusable while the domain story gets dedicated homes.
 
 ## 2. Why this framing
 
@@ -74,6 +76,22 @@ Frames MI300X performance around robot control:
 - **Deadline adherence, achievable control rate, jitter** as headline KPIs.
 - Tasks: bipedal walk, quadruped, humanoid, arm manipulation, VLA policy;
   phase toggle for deploy (inference) vs train (RL).
+
+### 3.4 Architect (use-case workbench) — the pipeline builder
+A 6-step stepper that assembles the whole prediction pipeline:
+1. **Hardware → gem5** — upload a design spec (PDF/JSON/YAML); parameters are
+   extracted (CUs, XCDs, caches, HBM, clock, ISA, Ruby protocol) with a
+   per-field confidence, editable, and rendered as a ready-to-run gem5 config.
+2. **Workload** — configure the benchmark and preview predicted behaviour.
+3. **Datasets** — training/validation/held-out setup, feature catalog by layer,
+   data sources (sim now; rocprofiler when a device connects).
+4. **Train & Accuracy** — fit the predictor, watch the train/val MAE curve,
+   read the scorecard (MAE, R², % within ±20%) and feature importance.
+5. **Device / Trace** — connect a real MI300X endpoint for live ground truth,
+   or fall back transparently to a recorded trace so panels never go empty.
+6. **LLM Copilot** — configure provider/model (default `claude-fable-5`),
+   endpoint, key, temperature; chat with an assistant grounded in the current
+   workbench state (offline rule-based today; real API later).
 
 ## 4. Data roadmap — simulated now, real later
 

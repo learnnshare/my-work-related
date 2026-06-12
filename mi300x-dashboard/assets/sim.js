@@ -336,3 +336,183 @@ function timeSeries(cfg, points) {
   }
   return out;
 }
+
+/* =====================================================================
+   ARCHITECT WORKBENCH — simulated data
+   Everything an architect configures: gem5 from a design spec, datasets,
+   the trained predictor's accuracy, device/trace I/O, and an LLM copilot.
+   All simulated; swap for real sources later.
+   ===================================================================== */
+
+/* ---- gem5: extract config knobs from an uploaded design spec --------- */
+const GEM5_SPECS = {
+  'mi300x_datasheet.pdf':       'AMD Instinct MI300X datasheet (CDNA3, gfx942)',
+  'mi300x_cpx_nps4.json':       'MI300X CPX / NPS4 partition profile',
+  'mi250x_spec.pdf':            'AMD Instinct MI250X spec (CDNA2, gfx90a)',
+  'custom_accelerator.yaml':    'Custom accelerator descriptor (YAML)',
+};
+function extractGem5Params(specKey) {
+  const table = {
+    'mi300x_datasheet.pdf': {
+      isa: 'gfx942', cus: 304, xcds: 8, simdPerCu: 4, wavefront: 64,
+      l1KB: 32, l2MB: 4, llcMB: 256, hbmGB: 192, bwGBs: 5300, clockMHz: 2100,
+      cpuModel: 'X86KvmCPU', protocol: 'GPU_VIPER', mem: 'HBM3_4H_2000', partition: 'SPX / NPS1',
+    },
+    'mi300x_cpx_nps4.json': {
+      isa: 'gfx942', cus: 38, xcds: 1, simdPerCu: 4, wavefront: 64,
+      l1KB: 32, l2MB: 4, llcMB: 32, hbmGB: 24, bwGBs: 663, clockMHz: 2100,
+      cpuModel: 'X86KvmCPU', protocol: 'GPU_VIPER', mem: 'HBM3_4H_2000', partition: 'CPX / NPS4',
+    },
+    'mi250x_spec.pdf': {
+      isa: 'gfx90a', cus: 220, xcds: 2, simdPerCu: 4, wavefront: 64,
+      l1KB: 16, l2MB: 8, llcMB: 0, hbmGB: 128, bwGBs: 3200, clockMHz: 1700,
+      cpuModel: 'X86KvmCPU', protocol: 'GPU_VIPER', mem: 'HBM2E_4H_1600', partition: 'n/a',
+    },
+    'custom_accelerator.yaml': {
+      isa: 'gfx942', cus: 256, xcds: 8, simdPerCu: 4, wavefront: 64,
+      l1KB: 64, l2MB: 8, llcMB: 512, hbmGB: 256, bwGBs: 6000, clockMHz: 2300,
+      cpuModel: 'TimingSimpleCPU', protocol: 'GPU_VIPER', mem: 'HBM3E_8H_2400', partition: 'SPX / NPS1',
+    },
+  };
+  const p = table[specKey] || table['mi300x_datasheet.pdf'];
+  // each field carries an extraction "confidence" so the UI can show it
+  const fields = [
+    { k: 'ISA target', key: 'isa', v: p.isa, conf: 0.99 },
+    { k: 'Compute units (CUs)', key: 'cus', v: p.cus, conf: 0.98 },
+    { k: 'XCD chiplets', key: 'xcds', v: p.xcds, conf: 0.96 },
+    { k: 'SIMDs / CU', key: 'simdPerCu', v: p.simdPerCu, conf: 0.93 },
+    { k: 'Wavefront size', key: 'wavefront', v: p.wavefront, conf: 0.99 },
+    { k: 'L1 vector cache', key: 'l1KB', v: p.l1KB, unit: 'KB', conf: 0.88 },
+    { k: 'L2 cache', key: 'l2MB', v: p.l2MB, unit: 'MB', conf: 0.84 },
+    { k: 'Infinity Cache (LLC)', key: 'llcMB', v: p.llcMB, unit: 'MB', conf: 0.80 },
+    { k: 'HBM capacity', key: 'hbmGB', v: p.hbmGB, unit: 'GB', conf: 0.97 },
+    { k: 'HBM bandwidth', key: 'bwGBs', v: p.bwGBs, unit: 'GB/s', conf: 0.91 },
+    { k: 'Engine clock', key: 'clockMHz', v: p.clockMHz, unit: 'MHz', conf: 0.95 },
+    { k: 'gem5 CPU model', key: 'cpuModel', v: p.cpuModel, conf: 1.0 },
+    { k: 'Ruby protocol', key: 'protocol', v: p.protocol, conf: 1.0 },
+    { k: 'Memory model', key: 'mem', v: p.mem, conf: 0.86 },
+    { k: 'Partition', key: 'partition', v: p.partition, conf: 0.90 },
+  ];
+  const avgConf = fields.reduce((s, f) => s + f.conf, 0) / fields.length;
+  return { fields, avgConf, raw: p, label: GEM5_SPECS[specKey] };
+}
+
+/* ---- Datasets: training + validation profiles ----------------------- */
+function datasetProfile() {
+  return {
+    train: { samples: 4820, workloads: 5, configs: 964, split: 70 },
+    val:   { samples: 1032, workloads: 5, configs: 206, split: 15 },
+    test:  { samples: 1031, workloads: 2, configs: 206, split: 15, heldOut: true },
+    features: 42,
+    featureGroups: [
+      { layer: 'L0', n: 9 }, { layer: 'L1', n: 5 }, { layer: 'L2', n: 5 },
+      { layer: 'L3', n: 5 }, { layer: 'L4', n: 6 }, { layer: 'L5', n: 6 }, { layer: 'L6', n: 6 },
+    ],
+    sources: [
+      { name: 'gem5 GPUFS stats.txt', rows: 964, kind: 'sim' },
+      { name: 'agnostic-sim counters', rows: 964, kind: 'sim' },
+      { name: 'rocprofiler (device)', rows: 0, kind: 'device', note: 'connect device to populate' },
+    ],
+    heldOutWorkloads: ['LLM 70B decode', 'Robot-arm manipulation (vision)'],
+    label: 'real-hardware latency + throughput (MI300X)',
+  };
+}
+
+/* ---- Predictor training curve (MAE % per epoch) --------------------- */
+function trainingCurve(epochs) {
+  const train = [], val = [];
+  for (let i = 0; i < epochs; i++) {
+    const x = i / Math.max(epochs - 1, 1);
+    train.push(+(26 * Math.exp(-2.6 * x) + 8.5 + jitter(i + 1, 0.5)).toFixed(2));
+    val.push(+(26 * Math.exp(-2.2 * x) + 11.5 + jitter(i + 60, 0.8)).toFixed(2));
+  }
+  return { train, val, epochs };
+}
+
+/* ---- Feature importance (which stack layers carry signal) ----------- */
+function featureImportance() {
+  return [
+    { k: 'L0 · HBM bandwidth util', v: 0.21, layer: 0 },
+    { k: 'L4 · achieved TFLOPS', v: 0.17, layer: 4 },
+    { k: 'L3 · kernel-launch latency', v: 0.14, layer: 3 },
+    { k: 'L6 · batch size', v: 0.12, layer: 6 },
+    { k: 'L0 · MFMA util', v: 0.10, layer: 0 },
+    { k: 'L5 · host overhead', v: 0.09, layer: 5 },
+    { k: 'L2 · HW queue depth', v: 0.08, layer: 2 },
+    { k: 'L1 · partition mode', v: 0.05, layer: 1 },
+    { k: 'L4 · RCCL bus BW', v: 0.04, layer: 4 },
+  ];
+}
+
+/* ---- Overall predictor accuracy across the workload suite ----------- */
+function predictorScorecard() {
+  const rows = Object.keys(WORKLOADS).map(id => {
+    const p = predictionSet({ workload: id, batch: 64, tick: 4 });
+    return {
+      workload: WORKLOADS[id].name, regime: WORKLOADS[id].regime,
+      withinPct: p.withinPct, meanErrPct: p.meanErrPct,
+      heldOut: id === 'llm70b' || id === 'manip',
+    };
+  });
+  const mae = rows.reduce((s, r) => s + r.meanErrPct, 0) / rows.length;
+  const within = rows.reduce((s, r) => s + (r.withinPct >= 80 ? 1 : 0), 0) / rows.length * 100;
+  const r2 = +(0.93 - mae / 200).toFixed(3);
+  return { rows, mae: +mae.toFixed(1), withinModels: +within.toFixed(0), r2 };
+}
+
+/* ---- Device / trace I/O status -------------------------------------- */
+const TRACE_FILES = [
+  'mi300x_2026-06-12_rocprof.rpt',
+  'mi300x_gemm_sweep.atp',
+  'mi300x_llm7b_decode.trace',
+];
+function deviceStatus(connected, endpoint) {
+  if (connected) {
+    return {
+      mode: 'live', source: endpoint || 'rocm://mi300x-cloud-01:9400',
+      latencyMs: +(0.6 + jitter(1, 0.2)).toFixed(2), driver: 'ROCm 6.1 · amdgpu 6.7',
+      gpus: 8, sampling: '1 kHz', status: 'streaming',
+    };
+  }
+  return {
+    mode: 'trace', source: TRACE_FILES[0],
+    latencyMs: 0, driver: 'offline replay', gpus: 1, sampling: 'recorded',
+    status: 'fallback — no device connected', available: TRACE_FILES,
+  };
+}
+
+/* ---- LLM copilot config + offline rule-based assistant -------------- */
+const LLM_MODELS = [
+  { id: 'claude-fable-5', name: 'Claude Fable 5', note: 'most capable (default)' },
+  { id: 'claude-opus-4-8', name: 'Claude Opus 4.8', note: 'high capability' },
+  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', note: 'balanced' },
+  { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', note: 'fast / cheap' },
+];
+
+function architectAssistant(message, ctx) {
+  const m = (message || '').toLowerCase();
+  const g = ctx.gem5 || {};
+  const has = (...words) => words.some(w => m.includes(w));
+  if (has('hello', 'hi ', 'hey', 'help', 'what can you')) {
+    return `I'm your MI300X architecture copilot (model: ${ctx.model}). I can read your extracted gem5 config, reason about the prediction model, and suggest experiments. Try: "summarize my gem5 config", "why is accuracy low for PPO training?", "what should I sweep next?", or "is my control loop within budget?".`;
+  }
+  if (has('gem5', 'config', 'spec', 'parameter')) {
+    return `Your gem5 target is **${g.isa || 'gfx942'}** with **${g.cus || 304} CUs** across **${g.xcds || 8} XCDs**, ${g.hbmGB || 192} GB HBM at ${(((g.bwGBs || 5300) / 1000)).toFixed(1)} TB/s, ${g.clockMHz || 2100} MHz, Ruby protocol ${g.protocol || 'GPU_VIPER'}. Heads-up: GPUFS needs KVM on an x86 host — start in GPUSE to validate kernels first. The Infinity Cache size (${g.llcMB ?? 256} MB) was extracted at lower confidence; verify it against the datasheet before long runs.`;
+  }
+  if (has('accuracy', 'error', 'why', 'predict', 'mae', 'wrong')) {
+    return `Current validation MAE is ~${ctx.mae || 12}% with R²≈${ctx.r2 || 0.87}. The biggest errors are on **CPU-bound and launch-bound** workloads (PPO training, batch-1 inference) — gem5 models the GPU well but host/CPU coupling and kernel-launch overhead are harder to capture. To improve: add host-side features (L5 host overhead, L3 launch latency are already your top-3 signals) and collect a few real-device traces to calibrate the bias term.`;
+  }
+  if (has('sweep', 'experiment', 'next', 'suggest', 'should i')) {
+    return `Given your config, three high-value sweeps: (1) **CU count** ${Math.round((g.cus||304)*0.5)}→${g.cus||304} to map GEMM latency scaling; (2) **LLC size** ${g.llcMB||256} MB ±2× to see decode bandwidth sensitivity; (3) **partition** SPX vs CPX for batch-1 robot inference, where the full GPU is over-provisioned. Run each in gem5, log stats.txt, and feed the deltas into the predictor.`;
+  }
+  if (has('dataset', 'training', 'validation', 'held', 'split')) {
+    return `Your dataset is 70/15/15 over ${ctx.features || 42} features (L0–L6). Keep **${(ctx.heldOut||['LLM 70B','manipulation']).join(' and ')}** strictly in the held-out test set — predicting workloads the model trained on proves nothing. If you connect a device, route rocprofiler rows into the training source to calibrate sim→real bias.`;
+  }
+  if (has('device', 'real', 'hardware', 'trace', 'connect')) {
+    return `No device is required to iterate — the workbench falls back to a recorded trace (${ctx.trace || 'mi300x_2026-06-12_rocprof.rpt'}). When your MI300X cloud node is up, point the endpoint at rocm://host:9400; live rocprofiler at 1 kHz will replace the trace and let you measure true ground truth for the parity plot.`;
+  }
+  if (has('latency', 'deadline', 'control', 'budget', 'real-time', 'hz')) {
+    return `For real-time control, the number that matters is **batch-1 p99**, not throughput. On ${g.cus||304} CUs the GPU is hugely over-provisioned for a small policy, so latency is launch-bound (~tens of µs). Check the Physical AI dashboard's budget bar against your target Hz; if p99 exceeds the cycle budget, reduce kernel count (HIP graphs) before reaching for more hardware.`;
+  }
+  return `Noted. With your current ${g.isa || 'gfx942'} / ${g.cus || 304}-CU config and ~${ctx.mae || 12}% validation error, I'd focus on calibrating the launch-bound and CPU-bound cases. Ask me about "gem5 config", "accuracy", "what to sweep next", "datasets", or "connecting a device".`;
+}
