@@ -1,0 +1,285 @@
+
+============================================================
+RAW amd-smi JSON (for parser tuning — paste this back)
+============================================================
+
+--- amd-smi metric -g 0 --json ---
+  top-level keys: ['gpu_data']
+  {
+    "gpu_data": [
+      {
+        "gpu": 0,
+        "usage": "N/A",
+        "power": {
+          "socket_power": {
+            "value": 0,
+            "unit": "W"
+          },
+          "gfx_voltage": "N/A",
+          "soc_voltage": "N/A",
+          "mem_voltage": "N/A",
+          "throttle_status": "N/A",
+          "power_management": "ENABLED"
+        },
+        "clock": {
+          "gfx_0": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_1": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_2": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_3": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_4": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_5": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_6": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "gfx_7": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+          "mem_0": {
+            "clk": "N/A",
+            "min_clk": "N/A",
+            "max_clk": "N/A",
+            "clk_locked": "N/A",
+            "deep_sleep": "N/A"
+          },
+  ... (truncated)
+
+--- amd-smi static -g 0 --json ---
+  top-level keys: ['gpu_data']
+  {
+    "gpu_data": [
+      {
+        "gpu": 0,
+        "asic": {
+          "market_name": "AMD Instinct MI300X OAM",
+          "vendor_id": "0x1002",
+          "vendor_name": "Advanced Micro Devices Inc. [AMD/ATI]",
+          "subvendor_id": "0x1002",
+          "device_id": "0x74a1",
+          "subsystem_id": "0x74a1",
+          "rev_id": "0x00",
+          "asic_serial": "0x8BB54A633BC8AF2F",
+          "oam_id": 0,
+          "num_compute_units": 304,
+          "target_graphics_version": "gfx942"
+        },
+        "bus": {
+          "bdf": "0000:3d:00.0",
+          "max_pcie_width": "N/A",
+          "max_pcie_speed": "N/A",
+          "pcie_interface_version": "N/A",
+          "slot_type": "N/A"
+        },
+        "vbios": {
+          "name": "AMD MI300X_HW_SRIOV_CVS_1VF",
+          "build_date": "2025/07/27 14:45",
+          "part_number": "113-M3000108-103",
+          "version": "022.040.003.043.000001"
+        },
+        "limit": {
+          "max_power": {
+            "value": 750,
+            "unit": "W"
+          },
+          "min_power": {
+            "value": 0,
+            "unit": "W"
+          },
+          "socket_power": {
+            "value": 750,
+            "unit": "W"
+          },
+          "slowdown_edge_temperature": "N/A",
+          "slowdown_hotspot_temperature": {
+            "value": 100,
+            "unit": "C"
+          },
+          "slowdown_vram_temperature": {
+            "value": 105,
+            "unit": "C"
+          },
+          "shutdown_edge_temperature": "N/A",
+          "shutdown_hotspot_temperature": {
+            "value": 110,
+            "unit": "C"
+          },
+          "shutdown_vram_temperature": {
+            "value": 115,
+            "unit": "C"
+          }
+        },
+        "driver": {
+          "name": "amdgpu",
+          "version": "6.16.13"
+        },
+        "board": {
+          "model_number": "102-G30213-00",
+          "product_serial": "692545010834",
+          "fru_id": "113-AMDG30213000A-100-300000067H",
+          "product_name": "AMD Instinct MI300X OAM",
+          "manufacturer_name": "AMD"
+        },
+        "ras": {
+          "eeprom_version": "0x21000",
+          "bad_page_threshold": "N/A",
+          "parity_schema": "DISABLED",
+          "single_bit_schema": "DISABLED",
+          "double_bit_schema": "DISABLED",
+          "poison_schema": "ENABLED",
+  ... (truncated)
+
+--- amd-smi partition -g 0 --json ---
+  top-level keys: ['current_partition', 'memory_partition', 'partition_profiles', 'partition_resources']
+  {
+    "current_partition": [
+      {
+        "gpu_id": 0,
+        "memory": "NPS1",
+        "accelerator_type": "SPX",
+        "accelerator_profile_index": 0,
+        "partition_id": "0"
+      }
+    ],
+    "memory_partition": [
+      {
+        "gpu_id": 0,
+        "memory_partition_caps": "NPS1,NPS2,NPS4",
+        "current_memory_partition": "NPS1"
+      }
+    ],
+    "partition_profiles": [
+      {
+        "gpu_id": 0,
+        "profile_index": 0,
+        "memory_partition_caps": "NPS1",
+        "accelerator_type": "SPX*",
+        "partition_id": "0",
+        "num_partitions": 1,
+        "num_resources": 4,
+        "resource_index": 0,
+        "resource_type": "XCC",
+        "resource_instances": 8,
+        "resources_shared": 1
+      },
+      {
+        "gpu_id": "",
+        "profile_index": "",
+        "memory_partition_caps": "",
+        "accelerator_type": "",
+        "partition_id": "",
+        "num_partitions": "",
+        "num_resources": "",
+        "resource_index": 1,
+        "resource_type": "DECODER",
+        "resource_instances": 4,
+        "resources_shared": 1
+      },
+      {
+        "gpu_id": "",
+        "profile_index": "",
+        "memory_partition_caps": "",
+        "accelerator_type": "",
+        "partition_id": "",
+        "num_partitions": "",
+        "num_resources": "",
+        "resource_index": 2,
+        "resource_type": "DMA",
+        "resource_instances": 16,
+        "resources_shared": 1
+      },
+      {
+        "gpu_id": "",
+        "profile_index": "",
+        "memory_partition_caps": "",
+        "accelerator_type": "",
+        "partition_id": "",
+        "num_partitions": "",
+        "num_resources": "",
+        "resource_index": 3,
+        "resource_type": "JPEG",
+        "resource_instances": 32,
+        "resources_shared": 1
+      },
+      {
+        "gpu_id": "",
+        "profile_index": 1,
+        "memory_partition_caps": "NPS1",
+        "accelerator_type": "DPX",
+        "partition_id": "N/A",
+        "num_partitions": 2,
+        "num_resources": 4,
+        "resource_index": 4,
+        "resource_type": "XCC",
+  ... (truncated)
+
+============================================================
+L0 Silicon collector (samples amd-smi 3×)
+============================================================
+available: True (ok (amd-smi))
+scalars: {}
+series keys: ['power_w']
+fidelity: {}
+errors: []
+
+============================================================
+L1 Firmware collector
+============================================================
+available: True (ok)
+scalars: {
+  "compute_partition": "SPX",
+  "memory_partition": "NPS1",
+  "active_xcds": 8,
+  "smu_state": "performance",
+  "ecc_corrected": 0,
+  "firmware": "amdgpu (amd-smi, real)"
+}
+fidelity: {'compute_partition': 'measured', 'memory_partition': 'measured', 'active_xcds': 'measured', 'firmware': 'measured', 'smu_state': 'measured', 'ecc_corrected': 'measured'}
+
+============================================================
+DONE
+============================================================
+If L0 'series'/scalars or L1 partition came back empty/None, the raw JSON
+above tells me which field names to map. Paste this log back.
