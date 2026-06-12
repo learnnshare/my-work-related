@@ -49,6 +49,7 @@ def summarize() -> dict:
     return {
         "root": is_root(),
         "groups_render_video": in_group("render", "video"),
+        "amd_smi": has_binary("amd-smi"),
         "rocm_smi": has_binary("rocm-smi"),
         "rocprofv3": has_binary("rocprofv3") or has_binary("rocprof"),
         "ftrace_writable": ftrace_writable(),

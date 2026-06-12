@@ -1,105 +1,120 @@
 {
   "meta": {
     "schema_version": "1.0.0",
-    "source": "device",
-    "run_id": "20260612T163636Z_device_ppo-infer_59042e",
-    "timestamp": "2026-06-12T16:36:36.155464Z",
+    "source": "gem5",
+    "run_id": "20260612T171626Z_gem5_gemm_0d89d0",
+    "timestamp": "2026-06-12T17:16:26.670997Z",
     "gpu": "AMD Instinct MI300X",
     "model": "gfx942",
     "run_config": {
+      "isa": "gfx942",
+      "cus": 304,
+      "xcds": 8,
+      "simdPerCu": 4,
+      "wavefront": 64,
+      "l1KB": 32,
+      "l2MB": 4,
+      "llcMB": 256,
       "hbmGB": 192,
       "bwGBs": 5300,
+      "clockMHz": 2100,
+      "cpuModel": "X86KvmCPU",
+      "protocol": "GPU_VIPER",
+      "mem": "HBM3_4H_2000",
+      "partition": "SPX / NPS1",
       "numGPUs": 1,
       "peakTflops": 1307.4
     },
     "workload": {
-      "id": "ppo_infer",
-      "name": "PPO Policy Inference (batch-1 robot control)",
-      "unit": "inferences",
-      "short": "inf",
-      "pref": "fp16",
-      "regime": "launch-bound",
-      "numKernels": 6,
-      "flopsPerItem": 1500000.0,
-      "weightBytesGB": 0.004,
-      "actBytesPerItem": 200000.0,
-      "target_hz": 200,
+      "id": "gemm",
+      "name": "rocBLAS GEMM (8192\u00b3)",
+      "unit": "GEMMs",
+      "short": "gemm",
+      "pref": "bf16",
+      "regime": "compute-bound",
+      "numKernels": 1,
+      "flopsPerItem": 1099511627776,
+      "weightBytesGB": 0.4,
+      "actBytesPerItem": 402653184,
       "precision": "bf16",
       "batch": 1,
       "num_gpus": 1,
       "peakTflops": 1307.4
     },
     "fidelity": {
-      "active_cus": "measured",
+      "active_cus": "derived",
       "clock_mhz": "measured",
-      "mfma_util_pct": "measured",
-      "hbm_util_pct": "measured",
-      "vgpr_occ_pct": "measured",
-      "power_w": "measured",
-      "temp_c": "measured",
+      "mfma_util_pct": "derived",
+      "hbm_util_pct": "derived",
+      "vgpr_occ_pct": "derived",
+      "power_w": "synthetic",
+      "temp_c": "synthetic",
       "compute_partition": "measured",
       "memory_partition": "measured",
       "active_xcds": "measured",
-      "smu_state": "measured",
-      "ecc_corrected": "measured",
+      "smu_state": "null",
+      "ecc_corrected": "synthetic",
       "firmware": "measured",
-      "kfd_dispatch_us": "measured",
-      "hw_queue_depth": "measured",
-      "dma_gbs": "measured",
-      "page_faults_s": "measured",
-      "irqs_s": "measured",
-      "launch_latency_us": "measured",
-      "dispatch_rate_k": "measured",
-      "hsa_queue_occ_pct": "measured",
-      "signal_wait_us": "measured",
+      "kfd_dispatch_us": "derived",
+      "hw_queue_depth": "derived",
+      "dma_gbs": "derived",
+      "page_faults_s": "derived",
+      "irqs_s": "null",
+      "launch_latency_us": "derived",
+      "dispatch_rate_k": "derived",
+      "hsa_queue_occ_pct": "derived",
+      "signal_wait_us": "null",
       "active_streams": "measured",
-      "gemm_tflops": "measured",
-      "library": "measured",
+      "gemm_tflops": "derived",
+      "library": "synthetic",
       "kernel_cache_hit_pct": "measured",
-      "rccl_gbs": "measured",
-      "autotune_variant": "measured",
+      "rccl_gbs": "null",
+      "autotune_variant": "synthetic",
       "gpu_compute_ms": "measured",
-      "host_overhead_pct": "measured",
-      "vram_gb": "measured",
-      "hip_graph": "measured",
-      "launch_overhead_pct": "measured",
-      "e2e_ms": "measured",
-      "throughput": "measured",
+      "host_overhead_pct": "synthetic",
+      "vram_gb": "derived",
+      "hip_graph": "null",
+      "launch_overhead_pct": "derived",
+      "e2e_ms": "derived",
+      "latency_p50": "derived",
+      "latency_p99": "null",
+      "throughput": "derived",
+      "throughput_unit": "measured",
       "batch": "measured",
       "num_gpus": "measured",
-      "bound_by": "measured",
-      "control_hz": "measured",
-      "deadline_adherence_pct": "measured",
-      "cycle_jitter_ms": "measured",
-      "sense_ms": "measured",
-      "infer_ms": "measured",
-      "act_ms": "measured",
-      "episode_reward": "measured",
-      "sim2real_err_pct": "measured"
+      "bound_by": "derived",
+      "control_hz": "derived",
+      "deadline_adherence_pct": "derived",
+      "cycle_jitter_ms": "null",
+      "sense_ms": "null",
+      "infer_ms": "derived",
+      "act_ms": "null",
+      "episode_reward": "null",
+      "sim2real_err_pct": "null"
     }
   },
   "metrics": {
-    "e2eMs": 0.051,
-    "latencyP50": 0.051,
+    "e2eMs": 1.7125,
+    "latencyP50": 1.7125,
     "latencyP99": null,
-    "throughput": 19600.0,
-    "throughputUnit": "inf/s",
-    "achievedTflops": 0.8,
+    "throughput": 583.94,
+    "throughputUnit": "gemm/s",
+    "achievedTflops": 650.6,
     "peakTflops": 1307.4,
-    "achievedBwTBs": null,
+    "achievedBwTBs": 0.71,
     "peakBwTBs": 5.3,
-    "computeUtil": null,
-    "memUtil": null,
-    "busy": null,
-    "arithIntensity": null,
-    "powerW": 468,
-    "tempC": 58,
-    "clockMHz": 2095,
-    "memUsedGB": 0.4,
+    "computeUtil": 0.4976,
+    "memUtil": 0.134,
+    "busy": 0.4976,
+    "arithIntensity": 916.26,
+    "powerW": null,
+    "tempC": null,
+    "clockMHz": 2100,
+    "memUsedGB": 1.4,
     "memTotalGB": 192,
-    "scaleEff": null,
+    "scaleEff": 1.0,
     "numGPUs": 1,
-    "boundBy": "memory"
+    "boundBy": "compute"
   },
   "layers": [
     {
@@ -109,48 +124,48 @@
       "metrics": [
         {
           "k": "Active CUs",
-          "v": 28,
+          "v": 151,
           "fmt": "count",
           "max": 304,
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Engine clock",
-          "v": 2095,
+          "v": 2100,
           "unit": "MHz",
           "_f": "measured"
         },
         {
           "k": "MFMA / matrix-core util",
-          "v": 6.0,
+          "v": 49.8,
           "unit": "%",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "HBM3 bandwidth util",
-          "v": 41.0,
+          "v": 13.4,
           "unit": "%",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "VGPR occupancy",
-          "v": 38.0,
+          "v": 49.8,
           "unit": "%",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Board power",
-          "v": 468,
+          "v": null,
           "unit": "W",
           "max": 750,
-          "_f": "measured"
+          "_f": "synthetic"
         },
         {
           "k": "Junction temp",
-          "v": 58,
+          "v": null,
           "unit": "\u00b0C",
           "max": 95,
-          "_f": "measured"
+          "_f": "synthetic"
         }
       ]
     },
@@ -161,7 +176,7 @@
       "metrics": [
         {
           "k": "Compute partition",
-          "v": "SPX",
+          "v": "SPX / NPS1",
           "fmt": "text",
           "_f": "measured"
         },
@@ -180,19 +195,19 @@
         },
         {
           "k": "SMU power state",
-          "v": "performance",
+          "v": null,
           "fmt": "text",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "ECC corrected errors",
           "v": 0,
           "fmt": "count",
-          "_f": "measured"
+          "_f": "synthetic"
         },
         {
           "k": "Firmware",
-          "v": "amdgpu 6.7 (real)",
+          "v": "gem5 GPUFS (real KFD fw)",
           "fmt": "text",
           "_f": "measured"
         }
@@ -205,34 +220,34 @@
       "metrics": [
         {
           "k": "KFD dispatch latency",
-          "v": 2.2,
+          "v": 6.0,
           "unit": "\u00b5s",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "HW queue depth",
-          "v": 3,
+          "v": 8,
           "fmt": "count",
           "max": 16,
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "DMA H2D/D2H",
-          "v": 26.0,
+          "v": 0.0,
           "unit": "GB/s",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Page faults / s",
-          "v": 40,
+          "v": 0,
           "fmt": "count",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "IRQs / s",
-          "v": 2100,
+          "v": null,
           "fmt": "count",
-          "_f": "measured"
+          "_f": "null"
         }
       ]
     },
@@ -243,27 +258,27 @@
       "metrics": [
         {
           "k": "Kernel-launch latency",
-          "v": 4.6,
+          "v": 4.5,
           "unit": "\u00b5s",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Dispatch rate",
-          "v": 118.0,
+          "v": 0.592,
           "fmt": "k",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "HSA queue occupancy",
-          "v": 22.0,
+          "v": 49.8,
           "unit": "%",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Signal wait",
-          "v": 2.4,
+          "v": null,
           "unit": "\u00b5s",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Active streams",
@@ -280,33 +295,33 @@
       "metrics": [
         {
           "k": "GEMM achieved",
-          "v": 0.8,
+          "v": 650.6,
           "unit": "TFLOPS",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Library",
-          "v": "rocBLAS",
+          "v": null,
           "fmt": "text",
-          "_f": "measured"
+          "_f": "synthetic"
         },
         {
           "k": "Kernel cache hit",
-          "v": 74.0,
+          "v": 90.0,
           "unit": "%",
           "_f": "measured"
         },
         {
           "k": "RCCL bus BW",
-          "v": 0,
+          "v": null,
           "unit": "GB/s",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Autotune variant",
-          "v": "split-K",
+          "v": null,
           "fmt": "text",
-          "_f": "measured"
+          "_f": "synthetic"
         }
       ]
     },
@@ -317,53 +332,53 @@
       "metrics": [
         {
           "k": "GPU compute time",
-          "v": 0.012,
+          "v": 1.69,
           "unit": "ms",
           "_f": "measured"
         },
         {
           "k": "Host overhead",
-          "v": 34.0,
+          "v": null,
           "unit": "%",
-          "_f": "measured"
+          "_f": "synthetic"
         },
         {
           "k": "VRAM allocated",
-          "v": 0.4,
+          "v": 1.4,
           "unit": "GB",
           "max": 192,
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "HIP graph capture",
-          "v": "off",
+          "v": null,
           "fmt": "text",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Launch overhead",
-          "v": 41.0,
+          "v": 0.3,
           "unit": "%",
-          "_f": "measured"
+          "_f": "derived"
         }
       ]
     },
     {
       "id": 6,
       "name": "L6 \u00b7 Application / Workload",
-      "sub": "PPO Policy Inference (batch-1 robot control)",
+      "sub": "rocBLAS GEMM (8192\u00b3)",
       "metrics": [
         {
           "k": "End-to-end latency",
-          "v": 0.051,
+          "v": 1.7125,
           "unit": "ms",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Throughput",
-          "v": 19600.0,
+          "v": 583.94,
           "fmt": "big",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Batch size",
@@ -379,9 +394,9 @@
         },
         {
           "k": "Bound by",
-          "v": "memory",
+          "v": "compute",
           "fmt": "text",
-          "_f": "measured"
+          "_f": "derived"
         }
       ]
     },
@@ -392,53 +407,53 @@
       "metrics": [
         {
           "k": "Control rate achieved",
-          "v": 196,
+          "v": 584,
           "unit": "Hz",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Deadline adherence",
-          "v": 99.2,
+          "v": null,
           "unit": "%",
           "max": 100,
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Cycle jitter",
-          "v": 0.34,
+          "v": null,
           "unit": "ms",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Sense",
-          "v": 0.8,
+          "v": null,
           "unit": "ms",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Infer (policy)",
-          "v": 0.051,
+          "v": 1.7125,
           "unit": "ms",
-          "_f": "measured"
+          "_f": "derived"
         },
         {
           "k": "Act",
-          "v": 0.5,
+          "v": null,
           "unit": "ms",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Episode reward",
-          "v": 412.0,
+          "v": null,
           "fmt": "big",
-          "_f": "measured"
+          "_f": "null"
         },
         {
           "k": "Sim\u2192real error",
           "v": null,
           "unit": "%",
           "max": 100,
-          "_f": "measured"
+          "_f": "null"
         }
       ]
     }

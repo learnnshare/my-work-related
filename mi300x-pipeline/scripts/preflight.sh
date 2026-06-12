@@ -12,7 +12,7 @@ check() { if have "$1"; then ok "$1 — $(command -v "$1")"; else warn "$1 missi
 step "Core"
 check python3; check pip3; check git; check ssh; check rsync
 step "ROCm / profiling (cloud MI300X only)"
-check rocminfo; check rocm-smi; check rocprofv3; check rocprof
+check rocminfo; check amd-smi; check rocm-smi; check rocprofv3; check rocprof
 step "gem5 / containers (optional)"
 check docker; check scons
 [ -x "$HOME/gem5/build/VEGA_X86/gem5.opt" ] && ok "gem5.opt built" || warn "gem5.opt not built"

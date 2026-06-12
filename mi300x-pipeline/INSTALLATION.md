@@ -5,6 +5,11 @@ Setup for the MI300X / gem5 metrics pipeline across **two machines**: your local
 side, and view results) and a **cloud box with the AMD MI300X** (where real
 captures run). gem5 is optional and can run on either.
 
+> **Confirmed target box:** AMD Instinct MI300X (OAM), **ROCm 7.0.0**, amdgpu
+> 6.16.13, **`amd-smi` 26.0.0**, baremetal, SPX/NPS1, 196 GB, often accessed as
+> **root** via a Jupyter terminal. The collectors prefer `amd-smi` (ROCm 7) and
+> fall back to `rocm-smi`; as root no group/sudo setup is needed.
+
 > Every script is idempotent (safe to re-run) and lives in `scripts/`. View this
 > file on GitHub or in VS Code's Markdown preview to see the Mermaid diagrams.
 
@@ -94,13 +99,16 @@ The script prints your public key — paste it into the provider's console (or
 
 ## 5. Cloud MI300X setup
 
+Get the repo onto the box (Jupyter box → `git clone`; or `rsync` from WSL), then:
 ```bash
-ssh mi300x
-cd ~/mi300x-pipeline
-bash scripts/02_setup_cloud_mi300x.sh          # verifies ROCm, installs deps + PyTorch-ROCm
-# (most MI300X cloud images already have ROCm; add --install-rocm only if missing)
-exit && ssh mi300x                              # re-login so render/video groups apply
+# in the Jupyter terminal / ssh session on the MI300X box:
+cd ~/mi300x-pipeline          # (git clone <repo> ~/mi300x-pipeline  if not there yet)
+bash scripts/02_setup_cloud_mi300x.sh   # verifies amd-smi/ROCm 7, installs deps, checks torch
 ```
+On this box you're **root on ROCm 7**, so: no `render/video` group step, no
+re-login, and `amd-smi` is the SMI tool. Most MI300X images already ship a
+ROCm-built PyTorch — the script keeps it if present (only installs if missing).
+Add `--install-rocm` only if `rocminfo` is absent (rare).
 Then run a real capture and copy results back:
 ```bash
 # on cloud:
@@ -134,7 +142,8 @@ flowchart LR
 | Symptom | Fix |
 |---|---|
 | `ssh mi300x` asks for password | public key not on the box → `ssh-copy-id -i ~/.ssh/id_ed25519_mi300x.pub user@host` |
-| `rocm-smi: command not found` (cloud) | ROCm not loaded → re-run `02_*.sh --install-rocm`, or ask provider which module to load |
+| `rocm-smi: command not found` (cloud) | ROCm 7 uses **`amd-smi`** — collectors prefer it automatically; verify with `amd-smi monitor`. Only `--install-rocm` if `rocminfo` is also missing |
+| `torch` ROCm wheel mismatch on ROCm 7 | the box likely ships torch — keep it. If installing yourself, set `TORCH_ROCM_INDEX=https://download.pytorch.org/whl/rocm6.4` (closest stable) before `02_*.sh` |
 | rocprofv3 permission denied | not in `render,video` groups, or need sudo for HW counters → re-login; run privileged collectors with sudo |
 | dashboard shows simulated data | `data/bundle.js` missing → run `python orchestrator.py`; check browser console for `[data.js] MI300X_DATA loaded` |
 | `torch.cuda.is_available()` is False on MI300X | you installed the CUDA wheel → reinstall from the ROCm index (see `requirements.txt`) |

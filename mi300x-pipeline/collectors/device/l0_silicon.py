@@ -1,9 +1,8 @@
-"""L0 Silicon — rocprofv3 HW counters + rocm-smi (power/temp/clock polled)."""
+"""L0 Silicon — rocprofv3 HW counters + amd-smi/rocm-smi (power/temp/clock/util)."""
 from __future__ import annotations
 from core.interface import Cadence, Sample
 from core.env import has_binary
-from core.sampling import now_ns
-from .common import DeviceCollector, run_json
+from .common import DeviceCollector, run_json, amd_smi_json, deep_find
 
 
 class L0Silicon(DeviceCollector):
@@ -11,19 +10,37 @@ class L0Silicon(DeviceCollector):
     name = "l0_silicon"
 
     def available(self):
+        if has_binary("amd-smi"):
+            return True, "ok (amd-smi)"
         if has_binary("rocm-smi"):
-            return True, "ok"
-        return False, "rocm-smi not found"
+            return True, "ok (rocm-smi)"
+        return False, "neither amd-smi nor rocm-smi found"
 
     def start(self, workload_pid=None):
-        # rocprofv3 wraps the workload (handled by orchestrator env); here we poll SMI
         self._gpu = self.cfg.get("gpu_index", 0)
+        self._use_amd = has_binary("amd-smi")
 
-    def sample(self, t_ns):
+    def _sample_amd_smi(self, t_ns):
+        m = amd_smi_json("metric", gpu=self._gpu)
+        if not m:
+            return
+        vals = {
+            "power_w": deep_find(m, "socket_power", "average_socket_power", "power"),
+            "temp_c": deep_find(m, "hotspot", "junction", "edge"),
+            "clock_mhz": deep_find(m, "gfx", "gfx_0", "sclk"),
+            "hbm_util_pct": deep_find(m, "umc_activity", "memory_activity", "mem_usage"),
+            "mfma_util_pct": deep_find(m, "gfx_activity", "graphics_activity"),
+        }
+        for src, v in vals.items():
+            if isinstance(v, (int, float)):
+                self.series.setdefault(src, []).append(Sample(t_ns, src, float(v)))
+
+    def _sample_rocm_smi(self, t_ns):
         d = run_json(["rocm-smi", "--showpower", "--showtemp", "--showgpuclocks", "--json"])
         if not d:
             return
         card = next(iter(d.values())) if isinstance(d, dict) else {}
+
         def num(*keys):
             for k in keys:
                 for ck, cv in card.items():
@@ -38,6 +55,12 @@ class L0Silicon(DeviceCollector):
                          ("clock_mhz", num("sclk"))):
             if val is not None:
                 self.series.setdefault(src, []).append(Sample(t_ns, src, val))
+
+    def sample(self, t_ns):
+        if getattr(self, "_use_amd", False):
+            self._sample_amd_smi(t_ns)
+        else:
+            self._sample_rocm_smi(t_ns)
 
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
