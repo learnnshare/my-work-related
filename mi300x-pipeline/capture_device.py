@@ -59,7 +59,8 @@ PMC_GROUPS = [
     ["SQ_WAVES", "GRBM_COUNT", "GRBM_GUI_ACTIVE"],          # core activity
     ["TCC_HIT_sum", "TCC_MISS_sum"],                         # L2 cache hit + HBM-traffic proxy
     ["TCC_EA_RDREQ_sum", "TCC_EA_WRREQ_sum"],               # memory requests (×64B) if exposed
-    ["SQ_INSTS_VALU", "SQ_INSTS_VALU_MFMA_MOPS_F16"],       # VALU + MFMA (confirmed on VF)
+    ["SQ_INSTS_VALU", "SQ_INSTS_VALU_MFMA_MOPS_F16"],       # VALU + fp16 MFMA (confirmed on VF)
+    ["SQ_INSTS_VALU_MFMA_MOPS_BF16"],                        # bf16 MFMA (separate counter)
 ]
 
 
@@ -201,10 +202,13 @@ def derive(traces, counters, agent, workload_id, kernel_hint, prec=None, flops_p
     # L0
     put("active_cus", round(cu * gfx_active) if gfx_active is not None else None, "derived")
     put("clock_mhz", clk, "derived")            # agent max; VF hides live clock
-    mfma = c.get("SQ_INSTS_VALU_MFMA_MOPS_F16")
-    if mfma is None:
+    # sum across MFMA op types (F16, BF16, F32, I8, ...) — bf16 GEMM uses the
+    # BF16 counter, fp16 the F16 counter, vadd none.
+    mfma_keys = [kk for kk in c if "MFMA_MOPS" in kk]
+    mfma_total = sum(c[kk] for kk in mfma_keys) if mfma_keys else None
+    if mfma_total is None:
         put("mfma_util_pct", None, "null")
-    elif mfma == 0:
+    elif mfma_total == 0:
         put("mfma_util_pct", 0.0, "measured")             # no matrix-engine use (e.g. vadd)
     else:
         # matrix-core utilization ≈ achieved matrix FLOPS / peak (compute_util)
