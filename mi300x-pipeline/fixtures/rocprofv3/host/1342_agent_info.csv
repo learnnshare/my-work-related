@@ -1,0 +1,2 @@
+"Node_Id","Logical_Node_Id","Agent_Type","Cpu_Cores_Count","Simd_Count","Wave_Front_Size","Num_Xcc","Cu_Count","Simd_Per_Cu","Max_Waves_Per_Cu","Max_Engine_Clk_Fcompute","Gfx_Target_Version","Name","Vendor_Name"
+3,2,"GPU",0,1216,64,8,304,4,32,2100,"gfx942","gfx942","AMD"

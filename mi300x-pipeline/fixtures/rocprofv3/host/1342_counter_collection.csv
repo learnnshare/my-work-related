@@ -1,0 +1,11 @@
+"Correlation_Id","Dispatch_Id","Agent_Id","Queue_Id","Process_Id","Thread_Id","Grid_Size","Kernel_Id","Kernel_Name","Workgroup_Size","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Counter_Name","Counter_Value","Start_Timestamp","End_Timestamp"
+1,1,"Agent 2",1,1342,1342,77824,10,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"GRBM_COUNT",296511.000000,1182456497920728,1182456497928746
+1,1,"Agent 2",1,1342,1342,77824,10,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"GRBM_GUI_ACTIVE",260000.000000,1182456497920728,1182456497928746
+1,1,"Agent 2",1,1342,1342,77824,10,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"SQ_WAVES",1216.000000,1182456497920728,1182456497928746
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"GRBM_COUNT",1850000.000000,1182456498100000,1182456498116600
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"GRBM_GUI_ACTIVE",1480000.000000,1182456498100000,1182456498116600
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"SQ_WAVES",65536.000000,1182456498100000,1182456498116600
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"TCC_HIT_sum",820000.000000,1182456498100000,1182456498116600
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"TCC_MISS_sum",180000.000000,1182456498100000,1182456498116600
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"TCC_EA_RDREQ_sum",260000.000000,1182456498100000,1182456498116600
+3,3,"Agent 2",1,1342,1342,4194304,11,"vadd(float const*, float const*, float*, int)",256,0,0,8,0,16,"TCC_EA_WRREQ_sum",65536.000000,1182456498100000,1182456498116600
