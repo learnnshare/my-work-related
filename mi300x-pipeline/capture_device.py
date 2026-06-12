@@ -39,13 +39,15 @@ EA_BYTES = 64
 FLOP_MODEL = {"vectoradd": 128}   # vadd: 64 inner iters * (mul+add)
 
 # Independent counter groups — each is its own rocprofv3 pass, so a group the VF
-# rejects doesn't kill the others. Add/adjust names per `rocprofv3-avail info --pmc`.
+# rejects doesn't kill the others. These three are CONFIRMED working on the
+# MI300X SR-IOV VF (gfx942, ROCm 7). Derived metrics like FETCH_SIZE/WRITE_SIZE
+# and MFMA_MOPS_* triggered heavy multiplexing / hung on this VF and are omitted;
+# raw TCC_EA_RDREQ/WRREQ already give memory bytes. Add extras via --extra-pmc.
 PMC_GROUPS = [
-    ["SQ_WAVES", "GRBM_COUNT", "GRBM_GUI_ACTIVE"],   # core activity (known-good)
-    ["TCC_HIT_sum", "TCC_MISS_sum"],                  # L2 cache hit
-    ["TCC_EA_RDREQ_sum", "TCC_EA_WRREQ_sum"],         # memory requests (×64B)
-    ["FETCH_SIZE", "WRITE_SIZE"],                     # memory bytes (KB) — alt
-    ["SQ_INSTS_VALU", "SQ_INSTS_VALU_MFMA_MOPS_F16"], # compute/MFMA — alt
+    ["SQ_WAVES", "GRBM_COUNT", "GRBM_GUI_ACTIVE"],          # core activity
+    ["TCC_HIT_sum", "TCC_MISS_sum"],                         # L2 cache hit + HBM-traffic proxy
+    ["TCC_EA_RDREQ_sum", "TCC_EA_WRREQ_sum"],               # memory requests (×64B) if exposed
+    ["SQ_INSTS_VALU", "SQ_INSTS_VALU_MFMA_MOPS_F16"],       # VALU + MFMA (confirmed on VF)
 ]
 
 
@@ -85,7 +87,7 @@ def _merge_counters(dst, src):
         dst.setdefault(k, {}).update(cm)
 
 
-def capture(app, raw_dir):
+def capture(app, raw_dir, extra_groups=None):
     """Run trace + per-group pmc passes; merge whatever succeeds."""
     tdir = raw_dir / "trace"
     rc, _ = run_rocprofv3(app, tdir, trace=True)
@@ -94,8 +96,9 @@ def capture(app, raw_dir):
     traces = R.parse_kernel_trace(t["kernel_trace"])
     agent = R.parse_agent_info(t["agent_info"])
 
+    groups = PMC_GROUPS + list(extra_groups or [])
     counters = {}
-    for i, grp in enumerate(PMC_GROUPS):
+    for i, grp in enumerate(groups):
         print(f"  → pmc group {i + 1}/{len(PMC_GROUPS)}: {grp} ...")
         pdir = raw_dir / f"pmc{i}"
         rc, log = run_rocprofv3(app, pdir, pmc=grp)
@@ -136,11 +139,18 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
 
     rd = c.get("TCC_EA_RDREQ_sum")
     wr = c.get("TCC_EA_WRREQ_sum")
+    bw_basis = "TCC_EA"
     if rd is not None or wr is not None:
         total_bytes = ((rd or 0) + (wr or 0)) * EA_BYTES
+    elif c.get("FETCH_SIZE") is not None or c.get("WRITE_SIZE") is not None:
+        total_bytes = ((c.get("FETCH_SIZE") or 0) + (c.get("WRITE_SIZE") or 0)) * 1024
+        bw_basis = "FETCH/WRITE_SIZE"
+    elif c.get("TCC_MISS_sum") is not None:
+        # L2 misses go to HBM — a solid bandwidth proxy when EA counters are absent
+        total_bytes = c["TCC_MISS_sum"] * EA_BYTES
+        bw_basis = "TCC_MISS×64 (proxy)"
     else:
-        fz, wz = c.get("FETCH_SIZE"), c.get("WRITE_SIZE")    # KB (rocprofiler derived)
-        total_bytes = ((fz or 0) + (wz or 0)) * 1024 if (fz is not None or wz is not None) else None
+        total_bytes = None
     achieved_bw = (total_bytes / kernel_time_s / 1e12) if (total_bytes and kernel_time_s) else None
 
     fpt = FLOP_MODEL.get(workload_id)
@@ -166,7 +176,11 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     # L0
     put("active_cus", round(cu * gfx_active) if gfx_active is not None else None, "derived")
     put("clock_mhz", clk, "derived")            # agent max; VF hides live clock
-    put("mfma_util_pct", None, "null")          # need MFMA counters; vadd has none
+    mfma = c.get("SQ_INSTS_VALU_MFMA_MOPS_F16")
+    put("mfma_util_pct", 0.0 if mfma == 0 else None,
+        "measured" if mfma == 0 else "null")    # 0% => no matrix-engine use (e.g. vadd)
+    if achieved_bw:
+        print(f"  [bandwidth basis: {bw_basis} -> {achieved_bw:.3f} TB/s]")
     put("hbm_util_pct", round(mem_util * 100, 1) if mem_util is not None else None, "measured")
     put("vgpr_occ_pct", round(min(100, (vgpr or 0) / 512 * 100), 1) if vgpr is not None else None, "measured")
     put("power_w", None, "null")                # SR-IOV VF: no sensor
