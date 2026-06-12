@@ -71,7 +71,8 @@ def ensure_binary(workload):
     prof = WORKLOAD_PROFILES[workload]
     binp = HERE / "bench" / workload
     src = HERE / "bench" / prof["src"]
-    if binp.exists():
+    # rebuild if the binary is missing or older than its source
+    if binp.exists() and binp.stat().st_mtime >= src.stat().st_mtime:
         return binp
     if not shutil.which("hipcc"):
         sys.exit("hipcc not found — can't build the workload (run on the MI300X box)")
