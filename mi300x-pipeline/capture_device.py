@@ -196,8 +196,13 @@ def derive(traces, counters, agent, workload_id, kernel_hint):
     put("active_cus", round(cu * gfx_active) if gfx_active is not None else None, "derived")
     put("clock_mhz", clk, "derived")            # agent max; VF hides live clock
     mfma = c.get("SQ_INSTS_VALU_MFMA_MOPS_F16")
-    put("mfma_util_pct", 0.0 if mfma == 0 else None,
-        "measured" if mfma == 0 else "null")    # 0% => no matrix-engine use (e.g. vadd)
+    if mfma is None:
+        put("mfma_util_pct", None, "null")
+    elif mfma == 0:
+        put("mfma_util_pct", 0.0, "measured")             # no matrix-engine use (e.g. vadd)
+    else:
+        # matrix-core utilization ≈ achieved matrix FLOPS / peak (compute_util)
+        put("mfma_util_pct", round((compute_util or 0) * 100, 1), "derived")
     if achieved_bw:
         print(f"  [bandwidth basis: {bw_basis} -> {achieved_bw:.3f} TB/s]")
     put("hbm_util_pct", round(mem_util * 100, 1) if mem_util is not None else None, "measured")
