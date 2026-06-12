@@ -21,8 +21,11 @@ function el(tag, attrs, parent) {
 }
 function svgRoot(container, w, h) {
   container.innerHTML = '';
-  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%', height: '100%',
-    preserveAspectRatio: 'xMidYMid meet' }, container);
+  // Size height from the viewBox aspect ratio (robust across browsers incl.
+  // Safari, where height:100% in an auto-height container collapses to 0).
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%',
+    preserveAspectRatio: 'xMidYMid meet',
+    style: `display:block;width:100%;height:auto;aspect-ratio:${w}/${h}` }, container);
   return svg;
 }
 function fmtNum(n) {

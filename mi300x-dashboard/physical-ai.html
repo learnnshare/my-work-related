@@ -98,6 +98,8 @@
           <div class="statline"><span class="l">Metrics within ±20%</span><span class="v" id="within">—</span></div>
           <div class="statline"><span class="l">Mean abs error</span><span class="v" id="meanErr">—</span></div>
           <div class="statline"><span class="l">Hardest to predict</span><span class="v" id="hardest">—</span></div>
+          <div class="chart" id="accTrend" style="margin-top:10px"></div>
+          <div class="note" style="margin-top:2px">mean prediction error over time — target ≤ 20%</div>
         </div>
       </div>
 
@@ -230,6 +232,13 @@ function render(){
   document.getElementById('hardest').textContent = worst.k+' ('+worst.errPct.toFixed(1)+'%)';
 
   parityPlot(document.getElementById('parity'), pred.pairs, {w:520,h:230,target:pred.targetPct});
+
+  // populated accuracy trend: mean prediction error across recent ticks
+  const errHist = [];
+  for(let i=0;i<20;i++){ errHist.push(predictionSet({...cfg, tick:(cfg.tick||0)-(20-i)}).meanErrPct); }
+  lineChart(document.getElementById('accTrend'),
+    [{data:errHist,color:pred.meanErrPct<=20?C.green:C.amber}],
+    {w:300,h:110,area:true,maxY:Math.max(28, Math.max(...errHist)*1.2),xlabel:'mean error %'});
 
   document.getElementById('thru').textContent = fmtNum(m.throughput)+' '+m.throughputUnit+'/s';
   document.getElementById('robots').textContent = cfg.batch.toLocaleString();

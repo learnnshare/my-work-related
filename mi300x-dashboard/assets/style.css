@@ -122,7 +122,8 @@ input[type=range] { width: 100%; accent-color: var(--red); }
   display: flex; align-items: center; gap: 8px; }
 .card h3 .tag { font-size: 10px; color: var(--text-dim); font-weight: 500;
   border: 1px solid var(--border2); padding: 1px 7px; border-radius: 999px; }
-.card .chart { width: 100%; }
+.card .chart { width: 100%; min-height: 60px; }
+.card .chart svg { max-width: 100%; }
 
 /* ---- KPI ---- */
 .kpi { display: flex; flex-direction: column; gap: 4px; }

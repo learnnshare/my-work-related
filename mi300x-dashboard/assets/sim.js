@@ -287,11 +287,11 @@ function costModel(metrics, dollarsPerGpuHr) {
      and launch-bound workloads are harder, so error is larger).
    Replace this with (gem5 features -> trained model -> estimate) for real. */
 const PREDICT_BIAS = {            // baseline relative error by workload regime
-  'compute-bound': 0.05,
+  'compute-bound': 0.05,         // sim nails compute-bound kernels
   'memory-bound': 0.10,
-  'balanced': 0.09,
-  'launch-bound': 0.15,
-  'cpu-bound': 0.19,
+  'balanced': 0.11,
+  'launch-bound': 0.20,          // launch/host effects are hard to simulate...
+  'cpu-bound': 0.26,             // ...CPU-coupled workloads hardest of all
 };
 const TARGET_ACCURACY = 0.20;     // ±20% success criterion from the objective
 
@@ -300,7 +300,7 @@ function predictionSet(cfg) {
   const b = PREDICT_BIAS[real.wl.regime] ?? 0.10;
   const t = cfg.tick || 0;
   // Each metric: a signed sim error (systematic component + bounded jitter).
-  const err = (seed, dir) => dir * (b * 0.65) + jitter(seed, b * 0.55);
+  const err = (seed, dir) => dir * (b * 0.8) + jitter(seed, b * 0.6);
   const pairs = [
     { k: 'E2E latency', unit: 'ms', lowerBetter: true,
       measured: real.e2eMs, predicted: real.e2eMs * (1 + err(t + 11, +1)) },
