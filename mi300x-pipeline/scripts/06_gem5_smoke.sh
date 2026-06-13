@@ -40,10 +40,18 @@ cd "$GEM5_DIR" || exit 1
 
 echo
 echo "== result =="
-if [ -s "$OUT/stats.txt" ] && grep -q "simSeconds" "$OUT/stats.txt"; then
-    echo "SUCCESS — gem5 simulated the kernel. Key GPU stats:"
+VALU=$(grep -m1 "CUs0.vALUInsts" "$OUT/stats.txt" 2>/dev/null | awk '{print $2}')
+if [ -s "$OUT/stats.txt" ] && grep -q "simSeconds" "$OUT/stats.txt" && [ -n "$VALU" ] && [ "$VALU" != "0" ]; then
+    echo "SUCCESS — gem5 simulated the kernel WITH GPU work (vALUInsts=$VALU). Key stats:"
     grep -iE "simSeconds|system.cpu.*numCycles|gpu.*numCycles|TCC|TCP|numKernels|CUs.*Inst|mem_ctrls.*bytes" \
         "$OUT/stats.txt" | head -25 | sed 's/^/  /'
+elif [ -s "$OUT/stats.txt" ] && grep -q "simSeconds" "$OUT/stats.txt"; then
+    echo "PARTIAL — gem5 ran but the GPU kernel did NOT dispatch (CU vALUInsts=0)."
+    echo "Cause: gem5-SE's emulated GPU driver needs its MATCHING (older) ROCm userspace"
+    echo "(the gem5 'gcn-gpu' docker image). This box is ROCm 7 with no docker/KVM, so the"
+    echo "ROCm-7 runtime can't dispatch kernels to gem5's emulated gfx900 GPU."
+    echo "→ Live gem5 GPU-kernel sim is NOT available on this VF. Present Path 2 as"
+    echo "  'simulator built + integrated + record-schema validated' (see proposal)."
     echo
     echo "FULL stats at: $OUT/stats.txt"
     echo "config at:     $OUT/config.json"

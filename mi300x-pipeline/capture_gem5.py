@@ -110,6 +110,16 @@ def main():
     region = stats_parser.load_region(stats_path, index=-1)
     if not region.d:
         sys.exit("[gem5] empty stats.txt — kernel didn't simulate")
+    if not args.fixtures:
+        valu = region.sum(r"CUs.*vALUInsts") or 0
+        klaunch = region.first(r"numKernelsLaunched|numKernel") or 0
+        if valu == 0 and klaunch == 0:
+            sys.exit("[gem5] GPU did NO work (CU vALUInsts=0) — the kernel never dispatched.\n"
+                     "       gem5-SE's emulated GPU needs its matching (older) ROCm userspace\n"
+                     "       (gem5 'gcn-gpu' docker image); this ROCm-7 VF can't. Not publishing an\n"
+                     "       empty GPU record. Path 2 = simulator built + integrated + schema-validated\n"
+                     "       (see my-notes/hackathon-proposal-refined.md). Use --fixtures to demo the\n"
+                     "       gem5→record path against a representative stats.txt.")
 
     wl = WL.get(args.workload, precision=args.precision, batch=1)
     # map_layers computes flops = flopsPerItem × batch and bytes = actBytesPerItem × batch.

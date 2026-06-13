@@ -31,7 +31,7 @@ flowchart LR
     W["Shared workload suite<br/>HIP microkernels · GEMM (fp16/bf16/fp8) · PPO inference"]
 
     W --> P1["Path 1 — Fine-grained stack<br/>L0–L7 via rocprofv3 + amd-smi<br/><b>DONE</b>"]
-    W --> P2["Path 2 — gem5 sim<br/>gfx90a SE proxy → gfx942<br/><b>proxy</b>"]
+    W --> P2["Path 2 — gem5 sim<br/>built + integrated<br/><b>live CDNA sim blocked on VF</b>"]
     W --> P3["Path 3 — Real MI300X<br/>ground truth (cloud VF)<br/><b>DONE</b>"]
 
     P1 --> PR["Predictor<br/>sim features → real labels<br/>measured error vs ±20% target"]
@@ -56,7 +56,7 @@ flowchart LR
 | Path | What it produces | Tools | Status |
 |---|---|---|---|
 | **1 — Fine-grained stack** | L0–L7 metrics per workload (compute/mem util, MFMA, cache-hit, occupancy, latency) | `rocprofv3` HW counters, `amd-smi` | ✅ **Done** — 29 real records |
-| **2 — Architectural sim** | cycle/cache/occupancy from a simulated CDNA GPU, no hardware needed | gem5 25.1 (VEGA_X86), `apu_se.py` | ⚠️ **gfx90a proxy** (see §5) |
+| **2 — Architectural sim** | cycle/cache/occupancy from a simulated GPU, no hardware needed | gem5 25.1 (VEGA_X86), `apu_se.py` | ⚠️ **built + integrated; live sim blocked on this VF** (see §5) |
 | **3 — Real ground truth** | measured latency / throughput on the actual device | real MI300X (cloud SR-IOV VF) | ✅ **Done** |
 
 **Layer model (L0→L7)** captured by Path 1:
@@ -97,7 +97,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    C1["❌ 'gem5 runs gfx942 instruction-accurate in SE mode'"] --> F1["✅ SE mode rejects gfx942; we use gfx90a (MI200/CDNA2) as a CDNA proxy, tuned to MI300-like CU/cache knobs. True gfx942 = GPUFS+KVM = future work"]
+    C1["❌ 'gem5 runs gfx942 instruction-accurate in SE mode'"] --> F1["✅ SE rejects gfx942 AND gfx90a (only gfx900); ROCm-7 runtime can't dispatch to gem5's emulated GPU (CU counters 0); no KVM for GPUFS. gem5 is built+integrated; live CDNA sim = future work on a docker/KVM node"]
     C2["❌ 'ROCm 6.x'"] --> F2["✅ Box is ROCm 7.0; fp8 moved rocBLAS→hipBLASLt"]
     C3["❌ '±20% guaranteed'"] --> F3["✅ ±20% is a target; we report MEASURED error (sim→real + real→real held-out). Small N ⇒ methodology demo, not a validated model"]
     C4["❌ 'full SMI telemetry'"] --> F4["✅ SR-IOV VF hides power/temp/clock; architectural signal from rocprofv3 counters + TCC-miss bandwidth proxy"]
@@ -107,24 +107,33 @@ These corrections are the point of a good benchmarking suite: it reports **what 
 actually observe**, and flags every gap (`measured` / `derived` / `synthetic` / `null`) rather than
 fabricating numbers.
 
-### Scope decision: present the gfx90a proxy as-is (GPUFS/MI300 = future work)
-We deliberately scope Path 2 to the **gfx90a (MI200/CDNA2) SE-mode proxy** and present it as such.
-True gfx942 simulation requires gem5 **GPUFS + KVM**, which the SR-IOV VF does not provide; chasing
-it would risk the demo for marginal gain. This is the honest, defensible choice — the *methodology*
-(sim features → real estimate, grounded agent on the gap) is identical regardless of the simulated
-ISA; only the absolute fidelity of Path 2 changes, and we say so.
+### Path 2 status on this box: simulator built + integrated; live GPU sim blocked by the VF
+We **built gem5 25.1** (`/workspace/shared/gem5`, VEGA_X86) and **integrated it end-to-end** —
+`run_gem5`/`stats_parser`/`config_extractor`/`map_layers` parse a gem5 `stats.txt`+`config.json`
+into the exact L0–L7 record schema (validated via `--fixtures`). But **live GPU-kernel simulation is
+not achievable on this specific SR-IOV VF**, due to three independent, verified constraints:
 
-**Presenter talking points (when asked "why not real MI300 in gem5?")**
-- "gem5 models AMD GPUs; SE mode tops out at gfx90a, and gfx942 needs full-system + KVM, which a
-  virtualized cloud GPU doesn't expose. So we use gfx90a as a **CDNA proxy** and label every gem5
-  record `proxy: gfx90a→gfx942`."
-- "It doesn't change the **method** — the predictor maps *whatever* sim/architectural features we
-  have to real labels, and the agent reasons over the *real* MI300X numbers. The proxy only affects
-  Path-2 absolute fidelity, which we report transparently."
-- "Our strongest prediction result is **real→real**: achieved efficiency of an *unseen* config to
-  ~10% MAE — that needs no gem5 at all and is fully validated on the MI300X."
-- "GPUFS/MI300 is a clean next step on a KVM-capable node; the pipeline already emits the same
-  record schema, so it's a drop-in once the simulator fidelity is available."
+1. **No `/dev/kvm`** → gem5 **GPUFS** (the only gfx942/MI300 path) can't boot.
+2. **gem5-SE supports only gfx900 (Vega10)** here (`apu_se.py` asserts it) — not CDNA.
+3. **gem5-SE's emulated GPU driver needs its matching (older) ROCm userspace** (the gem5 "gcn-gpu"
+   docker image). On **ROCm 7 + no docker**, the kernel compiles for gfx900 and gem5 runs, but the
+   ROCm-7 runtime can't dispatch to gem5's emulated GPU → **CU counters come back 0** (host ran, GPU
+   idle). Confirmed empirically.
+
+So Path 2 is presented as **"simulator built, integrated, and record-schema validated; CDNA-accurate
+live sim is future work on a docker/KVM-capable node."** This is honest and still demonstrates the
+full integration — the gem5→record→predictor→dashboard wiring lights up the moment a compatible
+sim environment is available.
+
+**Presenter talking points**
+- "We stood up gem5 and wired it end-to-end into our L0–L7 schema. Running a *CDNA* kernel live needs
+  either GPUFS+KVM (this cloud VF has no `/dev/kvm`) or gem5's matching ROCm docker image (box is
+  ROCm 7, no docker) — three independent environment limits we verified, not a design gap."
+- "Crucially the **methodology doesn't depend on it**: our quantitative result is **real→real** —
+  achieved efficiency of an *unseen* config predicted to ~10% MAE, fully validated on the MI300X with
+  no gem5 needed. gem5 is the architectural-what-if path; we're explicit about its fidelity."
+- "The integration is a drop-in: same record schema, so a KVM/docker node produces CDNA sim records
+  with zero pipeline changes."
 
 ## 6. The grounded agent — generative-AI reliability via hardware grounding
 
