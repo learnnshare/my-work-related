@@ -150,7 +150,7 @@ def main():
                                run_config=run_config, workload=wl,
                                peak_tflops=wl["peakTflops"])
 
-    print(f"\n[gem5] record: {wl['name']}  (proxy gfx90a→gfx942)")
+    print(f"\n[gem5] record: {wl['name']}  (proxy {args.gfx}→gfx942)")
     for k in ("e2eMs", "achievedTflops", "achievedBwTBs", "computeUtil", "memUtil", "boundBy"):
         print(f"  {k:16} = {rec['metrics'].get(k)}")
     print("  L4 cache hit (gem5 strength):",
