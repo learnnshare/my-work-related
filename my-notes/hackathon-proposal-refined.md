@@ -107,6 +107,25 @@ These corrections are the point of a good benchmarking suite: it reports **what 
 actually observe**, and flags every gap (`measured` / `derived` / `synthetic` / `null`) rather than
 fabricating numbers.
 
+### Scope decision: present the gfx90a proxy as-is (GPUFS/MI300 = future work)
+We deliberately scope Path 2 to the **gfx90a (MI200/CDNA2) SE-mode proxy** and present it as such.
+True gfx942 simulation requires gem5 **GPUFS + KVM**, which the SR-IOV VF does not provide; chasing
+it would risk the demo for marginal gain. This is the honest, defensible choice — the *methodology*
+(sim features → real estimate, grounded agent on the gap) is identical regardless of the simulated
+ISA; only the absolute fidelity of Path 2 changes, and we say so.
+
+**Presenter talking points (when asked "why not real MI300 in gem5?")**
+- "gem5 models AMD GPUs; SE mode tops out at gfx90a, and gfx942 needs full-system + KVM, which a
+  virtualized cloud GPU doesn't expose. So we use gfx90a as a **CDNA proxy** and label every gem5
+  record `proxy: gfx90a→gfx942`."
+- "It doesn't change the **method** — the predictor maps *whatever* sim/architectural features we
+  have to real labels, and the agent reasons over the *real* MI300X numbers. The proxy only affects
+  Path-2 absolute fidelity, which we report transparently."
+- "Our strongest prediction result is **real→real**: achieved efficiency of an *unseen* config to
+  ~10% MAE — that needs no gem5 at all and is fully validated on the MI300X."
+- "GPUFS/MI300 is a clean next step on a KVM-capable node; the pipeline already emits the same
+  record schema, so it's a drop-in once the simulator fidelity is available."
+
 ## 6. The grounded agent — generative-AI reliability via hardware grounding
 
 The agent reads a record's **real L0–L7 numbers** + the predictor signal + MI300X knowledge, and
