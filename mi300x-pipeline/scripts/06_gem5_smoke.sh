@@ -16,8 +16,9 @@ B="$GEM5_DIR/build/VEGA_X86/gem5.opt"
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$REPO/bench/vectoradd"
 OUT="$REPO/runs/gem5_smoke/m5out"
-CUS="${CUS:-4}"; N="${N:-2048}"; ITERS="${ITERS:-1}"; GFX="${GFX:-gfx942}"
-# MI300X is a DISCRETE gpu -> apu_se.py needs --dgpu for gfx942/gfx90a/gfx908
+# gem5 25.1 SE mode supports ONLY gfx900 (Vega10, dGPU) / gfx902 (APU) on this build.
+# The kernel must be compiled FOR the simulated ISA, so we --offload-arch=$GFX.
+CUS="${CUS:-4}"; N="${N:-2048}"; ITERS="${ITERS:-1}"; GFX="${GFX:-gfx900}"
 DGPU="${DGPU:---dgpu}"
 
 echo "== gem5 GPUSE smoke test =="
@@ -25,9 +26,9 @@ echo "== gem5 GPUSE smoke test =="
 [ -x "$B" ] || { echo "gem5.opt not found at $B — build it with scripts/05_build_gem5_shared.sh"; exit 1; }
 command -v hipcc >/dev/null || { echo "hipcc not found"; exit 1; }
 
-echo "compiling tiny-capable vectoradd ..."
-hipcc "$REPO/bench/vectoradd.cpp" -o "$APP" 2>&1 | grep -i error
-[ -x "$APP" ] || { echo "compile failed"; exit 1; }
+echo "compiling vectoradd FOR THE SIMULATED ISA ($GFX) ..."
+hipcc --offload-arch="$GFX" "$REPO/bench/vectoradd.cpp" -o "$APP" 2>&1 | tail -15
+[ -x "$APP" ] || { echo "compile FAILED — ROCm $(cat /opt/rocm/.info/version 2>/dev/null) may not support $GFX codegen."; echo "If so, gem5-SE can't run a freshly-built kernel here; use a prebuilt gfx900 resource (ask Claude)."; exit 1; }
 
 mkdir -p "$OUT"
 echo "running: gem5 apu_se.py $DGPU  gfx=$GFX  CUs=$CUS  vectoradd n=$N iters=$ITERS"

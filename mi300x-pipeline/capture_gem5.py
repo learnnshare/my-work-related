@@ -40,14 +40,18 @@ def sh(cmd, **kw):
     return subprocess.run(cmd, **kw)
 
 
-def build_kernel(workload, size, iters):
-    prof = WL.WORKLOADS.get(workload, {})
+def build_kernel(workload, gfx):
+    # The kernel MUST be built for the SIMULATED ISA (gem5 SE here = gfx900),
+    # not the host MI300X (gfx942), or the kernel won't dispatch in gem5.
     src = HERE / "bench" / ("vectoradd.cpp" if workload == "vectoradd" else "gemm.cpp")
     binp = HERE / "bench" / (workload + "_gem5")
     if not shutil.which("hipcc"):
         sys.exit("hipcc not found")
     libs = [] if workload == "vectoradd" else ["-lrocblas", "-I/opt/rocm/include", "-L/opt/rocm/lib"]
-    sh(["hipcc", str(src), "-o", str(binp), *libs], check=True)
+    r = sh(["hipcc", f"--offload-arch={gfx}", str(src), "-o", str(binp), *libs])
+    if r.returncode != 0 or not binp.exists():
+        sys.exit(f"hipcc could not build for {gfx} (ROCm 7 likely dropped Vega codegen). "
+                 f"Use a prebuilt gfx900 GPU resource instead — see RUNBOOK / ask Claude.")
     return binp
 
 
@@ -69,7 +73,7 @@ def main():
     ap.add_argument("--workload", default="vectoradd", choices=["vectoradd", "gemm"])
     ap.add_argument("--size", type=int, default=2048, help="n (vadd) or M=N=K (gemm) — keep TINY")
     ap.add_argument("--iters", type=int, default=1)
-    ap.add_argument("--gfx", default="gfx90a")
+    ap.add_argument("--gfx", default="gfx900")   # gem5 SE here supports only gfx900 (Vega10)
     ap.add_argument("--cus", type=int, default=8)
     ap.add_argument("--precision", default="bf16")
     ap.add_argument("--timeout", type=int, default=3600)
@@ -93,7 +97,7 @@ def main():
     else:
         if not Path(GEM5_BIN).exists():
             sys.exit(f"gem5 not found at {GEM5_BIN} (build it; source env.sh)")
-        binp = build_kernel(args.workload, args.size, args.iters)
+        binp = build_kernel(args.workload, args.gfx)
         a = (f"{args.size} {args.iters}" if args.workload == "vectoradd"
              else f"{args.size} {args.size} {args.size} {args.precision} {args.iters}")
         print(f"[gem5] running {args.workload} size={args.size} on gfx={args.gfx} CUs={args.cus} (proxy for gfx942)")
@@ -124,8 +128,8 @@ def main():
     # gfx90a proxy run-config, tuned toward MI300 peaks for comparable ratios
     run_config = {"isa": args.gfx, "cus": args.cus, "xcds": 8, "clockMHz": 2100,
                   "hbmGB": 192, "bwGBs": 5300, "peakTflops": wl["peakTflops"],
-                  "partition": "SE", "numGPUs": 1, "proxy": "gfx90a→gfx942",
-                  "fidelity_note": "gem5 SE models MI200/CDNA2; CDNA proxy for MI300"}
+                  "partition": "SE", "numGPUs": 1, "proxy": f"{args.gfx}→gfx942",
+                  "fidelity_note": f"gem5 SE models {args.gfx} (Vega-class); coarse proxy for CDNA3 MI300"}
     scalars, fidelity = map_layers.gem5_to_scalars(region, run_config, wl, mode="GPUSE")
 
     res = CollectorResult(layer_id=-1, cadence=Cadence.PERKERNEL)
