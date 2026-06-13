@@ -1,18 +1,26 @@
 {
   "records": [
-    "gemm|fp16|2048|1",
-    "gemm|fp16|4096|1",
-    "gemm|fp16|8192|1",
+    "gemm|bf16|1|1",
+    "ppo_infer|bf16|1|1",
+    "vectoradd|fp16|1|1",
+    "gemm|fp16|1|1",
     "gemm|bf16|2048|1",
     "gemm|bf16|4096|1",
     "gemm|bf16|8192|1",
+    "gemm|fp16|2048|1",
+    "gemm|fp16|4096|1",
+    "gemm|fp16|8192|1",
+    "gemm_fp8|fp8|1|1",
     "gemm|fp8|2048|1",
     "gemm|fp8|4096|1",
     "gemm|fp8|8192|1"
   ],
-  "predictions": [],
-  "sources": [
-    "device"
+  "predictions": [
+    "gemm"
   ],
-  "count": 9
+  "sources": [
+    "device",
+    "gem5"
+  ],
+  "count": 31
 }

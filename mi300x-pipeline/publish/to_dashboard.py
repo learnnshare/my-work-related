@@ -23,7 +23,7 @@ def _key(record):
 
 def publish(dashboard_data_dir, *, records=None, prediction_sets=None,
             gem5_params=None, dataset_profile=None, train_report=None,
-            device_status=None):
+            device_status=None, agent_reports=None):
     data_dir = Path(dashboard_data_dir)
     (data_dir / "records").mkdir(parents=True, exist_ok=True)
     (data_dir / "predictions").mkdir(parents=True, exist_ok=True)
@@ -46,6 +46,7 @@ def publish(dashboard_data_dir, *, records=None, prediction_sets=None,
         "datasetProfile": dataset_profile,
         "trainReport": train_report,
         "deviceStatus": device_status,
+        "agentReports": agent_reports or {},       # keyed "id|prec|batch|source"
         "generatedFrom": [r["meta"]["run_id"] for r in records],
     }
     index = {

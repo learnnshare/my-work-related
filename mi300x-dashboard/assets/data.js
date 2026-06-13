@@ -77,4 +77,17 @@
       return DATA.deviceStatus;
     };
   }
+
+  // grounded agent bottleneck report for a given cfg (real device record)
+  window.agentReport = function (cfg) {
+    if (!DATA.agentReports) return null;
+    var prec = resolvePrec(cfg);
+    var batch = cfg.batch || 1;
+    // try exact device key, then any source, then workload-only match
+    var keys = [cfg.workload + '|' + prec + '|' + batch + '|device',
+                cfg.workload + '|' + prec + '|' + batch + '|gem5'];
+    for (var i = 0; i < keys.length; i++) if (DATA.agentReports[keys[i]]) return DATA.agentReports[keys[i]];
+    for (var k in DATA.agentReports) if (k.indexOf(cfg.workload + '|' + prec + '|') === 0) return DATA.agentReports[k];
+    return null;
+  };
 })();

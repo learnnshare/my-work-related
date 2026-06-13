@@ -105,6 +105,13 @@
         </div>
       </div>
 
+      <div class="card" id="agentCard" style="margin-bottom:20px;display:none">
+        <h3>🤖 Grounded agent — bottleneck analysis <span class="tag" id="agentSrc">rule-based</span></h3>
+        <div id="agentSummary" style="font-size:13.5px;color:var(--text-hi);margin-bottom:10px"></div>
+        <div id="agentFindings"></div>
+        <div id="agentNotes" class="note" style="margin-top:8px"></div>
+      </div>
+
       <h3 style="color:var(--text-hi);font-size:15px;margin:0 0 12px;display:flex;gap:10px;align-items:center">
         AMD / ROCm stack telemetry
         <span class="tag" style="font-size:10px;border:1px solid var(--border2);color:var(--text-dim);padding:2px 9px;border-radius:999px">Layer 0 → Layer 6</span>
@@ -241,6 +248,23 @@ function render(){
   timeline(document.getElementById('timeline'), k, {w:300,h:110});
 
   renderLayers(m.layers);
+  renderAgent();
+}
+
+function renderAgent(){
+  var card=document.getElementById('agentCard');
+  var rep = (typeof window.agentReport==='function') ? window.agentReport(cfg) : null;
+  if(!rep){ card.style.display='none'; return; }
+  card.style.display='';
+  document.getElementById('agentSrc').textContent = rep.generated_by||'rule-based';
+  document.getElementById('agentSummary').textContent = rep.summary||'';
+  var sev={high:'var(--red)',warn:'var(--amber)',info:'var(--teal)'};
+  document.getElementById('agentFindings').innerHTML = (rep.findings||[]).map(function(f){
+    return '<div style="border-left:3px solid '+(sev[f.severity]||'var(--teal)')+';padding:6px 10px;margin:6px 0;background:var(--bg2);border-radius:6px">'
+      +'<div style="font-size:12px;color:var(--text-hi)"><b>'+f.layerName+'</b> · '+f.observation+'</div>'
+      +'<div style="font-size:12px;color:var(--text-dim);margin-top:3px">→ '+f.recommendation+'</div></div>';
+  }).join('');
+  document.getElementById('agentNotes').textContent = (rep.notes&&rep.notes.length)? ('Note: '+rep.notes.join(' ')) : '';
 }
 
 syncPrec(); syncPart();

@@ -1,0 +1,62 @@
+[
+  {
+    "workload": "rocBLAS GEMM (8192\u00b3)",
+    "pairs": [
+      {
+        "k": "E2E latency",
+        "unit": "ms",
+        "measured": 1.08,
+        "predicted": 1.7125,
+        "errPct": 58.56,
+        "within": false
+      },
+      {
+        "k": "Throughput",
+        "unit": "/s",
+        "measured": 925.0,
+        "predicted": 583.94,
+        "errPct": 36.87,
+        "within": false
+      },
+      {
+        "k": "Achieved TFLOPS",
+        "unit": "TFLOPS",
+        "measured": 712.0,
+        "predicted": 650.6,
+        "errPct": 8.62,
+        "within": true
+      }
+    ],
+    "note": "raw gem5(gfx90a proxy) estimate vs real MI300X \u2014 uncorrected"
+  },
+  {
+    "workload": "PPO Policy Inference (batch-1 robot control)",
+    "pairs": [
+      {
+        "k": "E2E latency",
+        "unit": "ms",
+        "measured": 0.051,
+        "predicted": 0.05,
+        "errPct": 1.96,
+        "within": true
+      },
+      {
+        "k": "Throughput",
+        "unit": "/s",
+        "measured": 19600.0,
+        "predicted": 20000.0,
+        "errPct": 2.04,
+        "within": true
+      },
+      {
+        "k": "Achieved TFLOPS",
+        "unit": "TFLOPS",
+        "measured": 0.8,
+        "predicted": 0.3,
+        "errPct": 62.5,
+        "within": false
+      }
+    ],
+    "note": "raw gem5(gfx90a proxy) estimate vs real MI300X \u2014 uncorrected"
+  }
+]

@@ -1,18 +1,18 @@
 {
   "real": {
-    "e2eMs": 4.1772,
-    "latencyP50": 4.1772,
+    "e2eMs": 14.6173,
+    "latencyP50": 14.6173,
     "latencyP99": null,
-    "throughput": 5027.24,
+    "throughput": 1436.65,
     "throughputUnit": "gemm/s",
-    "achievedTflops": 690.939,
-    "peakTflops": 1307.4,
-    "achievedBwTBs": 1.6011,
+    "achievedTflops": 1579.615,
+    "peakTflops": 2614.9,
+    "achievedBwTBs": 0.7964,
     "peakBwTBs": 5.3,
-    "computeUtil": 0.52848,
-    "memUtil": 0.30209,
+    "computeUtil": 0.60408,
+    "memUtil": 0.15026,
     "busy": 1.0,
-    "arithIntensity": 431.55,
+    "arithIntensity": 1983.5,
     "powerW": null,
     "tempC": null,
     "clockMHz": 2100,
@@ -42,19 +42,19 @@
           },
           {
             "k": "MFMA / matrix-core util",
-            "v": 52.8,
+            "v": 60.4,
             "unit": "%",
             "_f": "derived"
           },
           {
             "k": "HBM3 bandwidth util",
-            "v": 30.2,
+            "v": 15.0,
             "unit": "%",
             "_f": "measured"
           },
           {
             "k": "VGPR occupancy",
-            "v": 3.1,
+            "v": 23.4,
             "unit": "%",
             "_f": "measured"
           },
@@ -158,7 +158,7 @@
           },
           {
             "k": "Dispatch rate",
-            "v": 5.506,
+            "v": 1.642,
             "fmt": "k",
             "_f": "derived"
           },
@@ -189,19 +189,19 @@
         "metrics": [
           {
             "k": "GEMM achieved",
-            "v": 690.94,
+            "v": 1579.62,
             "unit": "TFLOPS",
             "_f": "measured"
           },
           {
             "k": "Library",
-            "v": "rocBLAS",
+            "v": "hipBLASLt",
             "fmt": "text",
             "_f": "measured"
           },
           {
             "k": "Kernel cache hit",
-            "v": 65.6,
+            "v": 77.4,
             "unit": "%",
             "_f": "measured"
           },
@@ -226,7 +226,7 @@
         "metrics": [
           {
             "k": "GPU compute time",
-            "v": 4.1772,
+            "v": 14.6173,
             "unit": "ms",
             "_f": "measured"
           },
@@ -260,17 +260,17 @@
       {
         "id": 6,
         "name": "L6 \u00b7 Application / Workload",
-        "sub": "GEMM fp16 4096^3",
+        "sub": "GEMM fp8 8192^3",
         "metrics": [
           {
             "k": "End-to-end latency",
-            "v": 4.1772,
+            "v": 14.6173,
             "unit": "ms",
             "_f": "measured"
           },
           {
             "k": "Throughput",
-            "v": 5027.24,
+            "v": 1436.65,
             "fmt": "big",
             "_f": "measured"
           },
@@ -301,7 +301,7 @@
         "metrics": [
           {
             "k": "Control rate achieved",
-            "v": 239,
+            "v": 68,
             "unit": "Hz",
             "_f": "derived"
           },
@@ -326,7 +326,7 @@
           },
           {
             "k": "Infer (policy)",
-            "v": 4.1772,
+            "v": 14.6173,
             "unit": "ms",
             "_f": "derived"
           },
@@ -357,24 +357,24 @@
     {
       "k": "Achieved TFLOPS",
       "unit": "TFLOPS",
-      "measured": 690.939,
-      "predicted": 783.5736,
-      "errPct": 13.41,
-      "ratio": 1.1341,
+      "measured": 1579.615,
+      "predicted": 1277.6011,
+      "errPct": 19.12,
+      "ratio": 0.8088,
       "within": true
     },
     {
       "k": "HBM bandwidth",
       "unit": "TB/s",
-      "measured": 1.6011,
-      "predicted": 1.2932,
-      "errPct": 19.23,
-      "ratio": 0.8077,
-      "within": true
+      "measured": 0.7964,
+      "predicted": 1.2458,
+      "errPct": 56.42,
+      "ratio": 1.5642,
+      "within": false
     }
   ],
-  "withinPct": 100.0,
-  "meanErrPct": 16.32,
+  "withinPct": 50.0,
+  "meanErrPct": 37.77,
   "targetPct": 20,
   "method": "real\u2192real held-out (config\u2192perf)"
 }

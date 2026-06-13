@@ -1,0 +1,66 @@
+{
+  "rows": [
+    {
+      "workload": "gemm bf16 2048\u00b3",
+      "withinPct": 100.0,
+      "meanErrPct": 6.28,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm bf16 4096\u00b3",
+      "withinPct": 50.0,
+      "meanErrPct": 14.2,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm bf16 8192\u00b3",
+      "withinPct": 50.0,
+      "meanErrPct": 21.17,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm fp16 2048\u00b3",
+      "withinPct": 100.0,
+      "meanErrPct": 12.65,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm fp16 4096\u00b3",
+      "withinPct": 100.0,
+      "meanErrPct": 16.32,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm fp16 8192\u00b3",
+      "withinPct": 100.0,
+      "meanErrPct": 14.39,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm fp8 2048\u00b3",
+      "withinPct": 50.0,
+      "meanErrPct": 26.5,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm fp8 4096\u00b3",
+      "withinPct": 50.0,
+      "meanErrPct": 22.76,
+      "heldOut": true
+    },
+    {
+      "workload": "gemm fp8 8192\u00b3",
+      "withinPct": 50.0,
+      "meanErrPct": 37.77,
+      "heldOut": true
+    }
+  ],
+  "mae": 19.12,
+  "withinModels": 44,
+  "r2": 0.809,
+  "perTargetMAE": {
+    "Achieved TFLOPS": 9.6,
+    "HBM bandwidth": 28.7
+  },
+  "method": "real\u2192real leave-one-out over the GEMM sweep (config\u2192efficiency)"
+}

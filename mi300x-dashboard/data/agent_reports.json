@@ -1,0 +1,483 @@
+{
+  "gemm|bf16|1|device": {
+    "workload": "rocBLAS GEMM (8192\u00b3)",
+    "source": "device",
+    "precision": "bf16",
+    "summary": "rocBLAS GEMM (8192\u00b3) [device, bf16]: compute-bound.",
+    "bottleneck": "compute-bound",
+    "findings": [],
+    "recommendations": [],
+    "grounded_facts": [],
+    "notes": [],
+    "generated_by": "rule"
+  },
+  "ppo_infer|bf16|1|device": {
+    "workload": "PPO Policy Inference (batch-1 robot control)",
+    "source": "device",
+    "precision": "bf16",
+    "summary": "PPO Policy Inference (batch-1 robot control) [device, bf16]: memory-bound. Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs.",
+    "bottleneck": "memory-bound",
+    "findings": [
+      {
+        "layer": 0,
+        "layerName": "L0",
+        "severity": "warn",
+        "observation": "Memory-bound: HBM traffic dominates (memUtil 0%).",
+        "recommendation": "Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs."
+      },
+      {
+        "layer": 5,
+        "layerName": "L5",
+        "severity": "warn",
+        "observation": "Host/CPU-bound: 34.0% of time outside GPU kernels.",
+        "recommendation": "Use HIP graphs to amortize launch, fuse kernels, or move host work off the critical path."
+      },
+      {
+        "layer": 3,
+        "layerName": "L3",
+        "severity": "warn",
+        "observation": "Launch-bound: 41.0% kernel-launch overhead (many tiny dispatches).",
+        "recommendation": "Batch/fuse kernels or capture a HIP graph to cut per-dispatch cost."
+      }
+    ],
+    "recommendations": [
+      "Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs.",
+      "Use HIP graphs to amortize launch, fuse kernels, or move host work off the critical path.",
+      "Batch/fuse kernels or capture a HIP graph to cut per-dispatch cost."
+    ],
+    "grounded_facts": [
+      "memUtil 0% > computeUtil 0%, HBM util 41.0%",
+      "L5 host overhead 34.0%",
+      "L5 launch overhead 41.0%"
+    ],
+    "notes": [],
+    "generated_by": "rule"
+  },
+  "gemm|bf16|1|gem5": {
+    "workload": "rocBLAS GEMM (8192\u00b3)",
+    "source": "gem5",
+    "precision": "bf16",
+    "summary": "rocBLAS GEMM (8192\u00b3) [gem5, bf16]: compute-bound. Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (49.8% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+    ],
+    "grounded_facts": [
+      "computeUtil 49.8% of peak, 650.6/1307.4 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "ppo_infer|bf16|1|gem5": {
+    "workload": "PPO Policy Inference (batch-1 robot control)",
+    "source": "gem5",
+    "precision": "bf16",
+    "summary": "PPO Policy Inference (batch-1 robot control) [gem5, bf16]: memory-bound. Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs.",
+    "bottleneck": "memory-bound",
+    "findings": [
+      {
+        "layer": 0,
+        "layerName": "L0",
+        "severity": "warn",
+        "observation": "Memory-bound: HBM traffic dominates (memUtil 12.1%).",
+        "recommendation": "Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs."
+      },
+      {
+        "layer": 3,
+        "layerName": "L3",
+        "severity": "warn",
+        "observation": "Launch-bound: 54.0% kernel-launch overhead (many tiny dispatches).",
+        "recommendation": "Batch/fuse kernels or capture a HIP graph to cut per-dispatch cost."
+      },
+      {
+        "layer": 1,
+        "layerName": "L1",
+        "severity": "info",
+        "observation": "GPU is over-provisioned for this batch-1 workload (very low occupancy).",
+        "recommendation": "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+      }
+    ],
+    "recommendations": [
+      "Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs.",
+      "Batch/fuse kernels or capture a HIP graph to cut per-dispatch cost.",
+      "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+    ],
+    "grounded_facts": [
+      "memUtil 12.1% > computeUtil 0.0%, HBM util 12.1%",
+      "L5 launch overhead 54.0%",
+      "batch 1, VGPR occupancy 15.9%, 37/304 active CUs"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "vectoradd|fp16|1|device": {
+    "workload": "vectoradd (vadd(float const*, float const*, float*, int))",
+    "source": "device",
+    "precision": "fp16",
+    "summary": "vectoradd (vadd(float const*, float const*, float*, int)) [device, fp16]: memory-bound. Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs.",
+    "bottleneck": "memory-bound",
+    "findings": [
+      {
+        "layer": 0,
+        "layerName": "L0",
+        "severity": "warn",
+        "observation": "Memory-bound: HBM traffic dominates (memUtil 36.3%).",
+        "recommendation": "Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs."
+      },
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "warn",
+        "observation": "Low L2 reuse (cache hit 25.6%) is feeding the memory bound.",
+        "recommendation": "Block/tile to fit the working set in L2 (4 MB) / Infinity Cache (256 MB)."
+      },
+      {
+        "layer": 1,
+        "layerName": "L1",
+        "severity": "info",
+        "observation": "GPU is over-provisioned for this batch-1 workload (very low occupancy).",
+        "recommendation": "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+      }
+    ],
+    "recommendations": [
+      "Raise arithmetic intensity \u2014 tile/block for L2 reuse, fuse elementwise ops, or increase batch so each byte does more FLOPs.",
+      "Block/tile to fit the working set in L2 (4 MB) / Infinity Cache (256 MB).",
+      "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+    ],
+    "grounded_facts": [
+      "memUtil 36.3% > computeUtil 3.1%, HBM util 36.3%",
+      "batch 1, VGPR occupancy 1.6%, 304/304 active CUs",
+      "L4 cache hit 25.6%"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp16|1|device": {
+    "workload": "gemm (Cijk_Ailk_Bljk_HHS_BH_MT256x112x)",
+    "source": "device",
+    "precision": "fp16",
+    "summary": "gemm (Cijk_Ailk_Bljk_HHS_BH_MT256x112x) [device, fp16]: compute-bound. Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (55.9% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      },
+      {
+        "layer": 1,
+        "layerName": "L1",
+        "severity": "info",
+        "observation": "GPU is over-provisioned for this batch-1 workload (very low occupancy).",
+        "recommendation": "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+      "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+    ],
+    "grounded_facts": [
+      "computeUtil 55.9% of peak, 730.799/1307.4 TFLOPS",
+      "batch 1, VGPR occupancy 3.1%, 304/304 active CUs"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|bf16|2048|device": {
+    "workload": "GEMM bf16 2048^3",
+    "source": "device",
+    "precision": "bf16",
+    "summary": "GEMM bf16 2048^3 [device, bf16]: compute-bound. Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (40.3% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+    ],
+    "grounded_facts": [
+      "computeUtil 40.3% of peak, 527.148/1307.4 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|bf16|4096|device": {
+    "workload": "GEMM bf16 4096^3",
+    "source": "device",
+    "precision": "bf16",
+    "summary": "GEMM bf16 4096^3 [device, bf16]: compute-bound. Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (56.1% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      },
+      {
+        "layer": 1,
+        "layerName": "L1",
+        "severity": "info",
+        "observation": "GPU is over-provisioned for this batch-1 workload (very low occupancy).",
+        "recommendation": "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+      "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+    ],
+    "grounded_facts": [
+      "computeUtil 56.1% of peak, 733.068/1307.4 TFLOPS",
+      "batch 1, VGPR occupancy 3.1%, 304/304 active CUs"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|bf16|8192|device": {
+    "workload": "GEMM bf16 8192^3",
+    "source": "device",
+    "precision": "bf16",
+    "summary": "GEMM bf16 8192^3 [device, bf16]: compute-bound. Near the roofline; further gains need lower precision or structured sparsity. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Well-utilized: 66.8% of peak of matrix-core peak (873.582 TFLOPS).",
+        "recommendation": "Near the roofline; further gains need lower precision or structured sparsity. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      }
+    ],
+    "recommendations": [
+      "Near the roofline; further gains need lower precision or structured sparsity. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+    ],
+    "grounded_facts": [
+      "computeUtil 66.8% of peak, 873.582/1307.4 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp16|2048|device": {
+    "workload": "GEMM fp16 2048^3",
+    "source": "device",
+    "precision": "fp16",
+    "summary": "GEMM fp16 2048^3 [device, fp16]: compute-bound. Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (40.0% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+    ],
+    "grounded_facts": [
+      "computeUtil 40.0% of peak, 523.255/1307.4 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp16|4096|device": {
+    "workload": "GEMM fp16 4096^3",
+    "source": "device",
+    "precision": "fp16",
+    "summary": "GEMM fp16 4096^3 [device, fp16]: compute-bound. Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (52.8% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      },
+      {
+        "layer": 1,
+        "layerName": "L1",
+        "severity": "info",
+        "observation": "GPU is over-provisioned for this batch-1 workload (very low occupancy).",
+        "recommendation": "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+      "For single-robot inference, consider a CPX/NPS partition (slice the GPU) or batch multiple agents \u2014 a full MI300X is wasted here."
+    ],
+    "grounded_facts": [
+      "computeUtil 52.8% of peak, 690.939/1307.4 TFLOPS",
+      "batch 1, VGPR occupancy 3.1%, 304/304 active CUs"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp16|8192|device": {
+    "workload": "GEMM fp16 8192^3",
+    "source": "device",
+    "precision": "fp16",
+    "summary": "GEMM fp16 8192^3 [device, fp16]: compute-bound. Near the roofline; further gains need lower precision or structured sparsity. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Well-utilized: 65.2% of peak of matrix-core peak (852.056 TFLOPS).",
+        "recommendation": "Near the roofline; further gains need lower precision or structured sparsity. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+      }
+    ],
+    "recommendations": [
+      "Near the roofline; further gains need lower precision or structured sparsity. Try fp8 (hipBLASLt) \u2014 measured ~1.7\u00d7 fp16 on this device."
+    ],
+    "grounded_facts": [
+      "computeUtil 65.2% of peak, 852.056/1307.4 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm_fp8|fp8|1|device": {
+    "workload": "gemm_fp8 (Cijk_Alik_Bljk_F8NHS_BH_Bias_HA_)",
+    "source": "device",
+    "precision": "fp8",
+    "summary": "gemm_fp8 (Cijk_Alik_Bljk_F8NHS_BH_Bias_HA_) [device, fp8]: compute-bound. Larger tiles / problem size improve MFMA efficiency.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (48.0% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency."
+    ],
+    "grounded_facts": [
+      "computeUtil 48.0% of peak, 1254.271/2614.9 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp8|2048|device": {
+    "workload": "GEMM fp8 2048^3",
+    "source": "device",
+    "precision": "fp8",
+    "summary": "GEMM fp8 2048^3 [device, fp8]: compute-bound. Larger tiles / problem size improve MFMA efficiency.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (40.0% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency."
+    ],
+    "grounded_facts": [
+      "computeUtil 40.0% of peak, 1044.814/2614.9 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp8|4096|device": {
+    "workload": "GEMM fp8 4096^3",
+    "source": "device",
+    "precision": "fp8",
+    "summary": "GEMM fp8 4096^3 [device, fp8]: compute-bound. Larger tiles / problem size improve MFMA efficiency.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Compute-bound with headroom (49.2% of peak).",
+        "recommendation": "Larger tiles / problem size improve MFMA efficiency."
+      }
+    ],
+    "recommendations": [
+      "Larger tiles / problem size improve MFMA efficiency."
+    ],
+    "grounded_facts": [
+      "computeUtil 49.2% of peak, 1286.068/2614.9 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  },
+  "gemm|fp8|8192|device": {
+    "workload": "GEMM fp8 8192^3",
+    "source": "device",
+    "precision": "fp8",
+    "summary": "GEMM fp8 8192^3 [device, fp8]: compute-bound. Near the roofline \u2014 efficient use of the matrix cores.",
+    "bottleneck": "compute-bound",
+    "findings": [
+      {
+        "layer": 4,
+        "layerName": "L4",
+        "severity": "info",
+        "observation": "Well-utilized: 60.4% of peak of matrix-core peak (1579.615 TFLOPS).",
+        "recommendation": "Near the roofline \u2014 efficient use of the matrix cores."
+      }
+    ],
+    "recommendations": [
+      "Near the roofline \u2014 efficient use of the matrix cores."
+    ],
+    "grounded_facts": [
+      "computeUtil 60.4% of peak, 1579.615/2614.9 TFLOPS"
+    ],
+    "notes": [
+      "Power/temp unavailable on this SR-IOV VF (sensors not exposed); use a bare-metal/PF node for power-efficiency metrics."
+    ],
+    "generated_by": "rule"
+  }
+}
