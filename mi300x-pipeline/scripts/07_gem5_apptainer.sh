@@ -24,10 +24,15 @@ JOBS="${JOBS:-8}"   # modest default — be a good neighbor on the shared server
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 STEP="${STEP:-all}"
 
-# keep apptainer cache + build scratch OFF the shared /tmp — in /home only
-export APPTAINER_CACHEDIR="$ROOT/.apptainer/cache"
-export APPTAINER_TMPDIR="$ROOT/.apptainer/tmp"
-mkdir -p "$APPTAINER_CACHEDIR" "$APPTAINER_TMPDIR" "$ROOT"
+# Keep EVERYTHING off the shared /tmp and / — all temp/cache/scratch in /home.
+export APPTAINER_CACHEDIR="$ROOT/.apptainer/cache"   # image layer cache
+export APPTAINER_TMPDIR="$ROOT/.apptainer/tmp"       # SIF build scratch
+export TMPDIR="$ROOT/tmp" TMP="$ROOT/tmp" TEMP="$ROOT/tmp"   # host-side git/scons/etc.
+mkdir -p "$APPTAINER_CACHEDIR" "$APPTAINER_TMPDIR" "$TMPDIR" "$ROOT"
+# inside the container we bind this home dir over /tmp (apptainer otherwise mounts
+# the HOST /tmp), so hipcc/scons intermediates never touch the shared /tmp.
+CTMP_BIND=(--bind "$TMPDIR":/tmp --bind "$TMPDIR":/var/tmp)
+INNER_TMP="export TMPDIR=/tmp TMP=/tmp TEMP=/tmp;"
 
 say(){ printf '\n=== %s ===\n' "$*"; }
 command -v apptainer >/dev/null || { echo "apptainer not found"; exit 1; }
@@ -50,8 +55,8 @@ if [ "$STEP" = "all" ] || [ "$STEP" = "build" ]; then
   if [ -x "$GEM5/build/VEGA_X86/gem5.opt" ]; then echo "  gem5.opt exists (skip build)"
   else
     say "Building gem5 VEGA_X86 inside the container ($JOBS jobs; 45+ min)"
-    apptainer exec --bind /home/amarnath "$SIF" bash -lc \
-      "cd '$GEM5' && scons build/VEGA_X86/gem5.opt -j$JOBS --ignore-style" \
+    apptainer exec --bind /home/amarnath "${CTMP_BIND[@]}" "$SIF" bash -lc \
+      "$INNER_TMP cd '$GEM5' && scons build/VEGA_X86/gem5.opt -j$JOBS --ignore-style" \
       || { echo "build failed"; exit 1; }
   fi
   [ "$STEP" = "build" ] && { echo "build done"; exit 0; }
@@ -63,8 +68,9 @@ if [ "$STEP" = "all" ] || [ "$STEP" = "run" ]; then
   OUT="$ROOT/m5out_smoke"; mkdir -p "$OUT"
   VADD="$ROOT/vectoradd_gfx900"
   say "Compiling vadd for gfx900 + running gem5 SE inside the container"
-  apptainer exec --bind /home/amarnath "$SIF" bash -lc "
+  apptainer exec --bind /home/amarnath "${CTMP_BIND[@]}" "$SIF" bash -lc "
     set -e
+    $INNER_TMP
     hipcc --offload-arch=gfx900 '$REPO/bench/vectoradd.cpp' -o '$VADD'
     cd '$GEM5'
     build/VEGA_X86/gem5.opt --outdir='$OUT' configs/example/apu_se.py \
